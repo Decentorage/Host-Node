@@ -14,6 +14,7 @@ public_ip = ""
 local_ip = ""
 decentorage_port = 0
 open_ports = []
+data_directory = "Data"
 
 
 # thread to send heartbeat to decentorage every second
@@ -80,11 +81,26 @@ def listen_for_req():
     print("waiting for req")
     serverSocket = socket.socket()
     serverSocket.bind((local_ip, decentorage_port))
-    serverSocket.listen(1)
+    serverSocket.listen(5)
     while True:
+        connection, addr = serverSocket.accept()
+        request_thread = threading.Thread(target=handle_request, args=(connection,))
+        request_thread.start()
+    serverSocket.close()
 
 
-
+# thread to handle requests
+def handle_request(connection):
+    while True:
+        data = connection.recv(1024).decode("UTF-8")
+        if data:
+            print(data)
+            if data == "upload":
+                receive_file()
+            elif data == "download":
+                send_file()
+            elif data == "audit":
+                audit()
 
 
 # check that port is not in use
@@ -153,12 +169,58 @@ def update_config_file():
             f.write(str(open_ports[i]) + '\n')
 
 
-def send_file():
+# return requested file to user
+def send_file(filename):
+    # file does not exist
+    if not os.path.isfile(os.path.join(data_directory, filename)):
+        return
+
     print("sending")
+    # open port for user
+    open_port(decentorage=False)
+    # create socket for user and wait until user connects
+    serverSocket = socket.socket()
+    serverSocket.bind((local_ip, decentorage_port))
+    serverSocket.listen(1)
+    connection, addr = serverSocket.accept()
+
+    # read and send the requested file
+    file = open(filename, "rb")
+    data = file.read(1024)
+
+    while data:
+        connection.send(data)
+        data = f.read(1024)
+    file.close()
+    print("Done sending...")
+    connection.close()
 
 
-def receive_file():
+# save uploaded file by user
+def receive_file(filename):
+    # make sure Data directory exists, If does not exist create directory
+    if not os.path.isdir(data_directory):
+        os.makedirs(data_directory)
+
     print("receiving")
+    # open port for the user
+    open_port(decentorage=False)
+    # create socket for user and wait for user to connect
+    serverSocket = socket.socket()
+    serverSocket.bind((local_ip, decentorage_port))
+    serverSocket.listen(1)
+    connection, addr = serverSocket.accept()
+
+    file = open(os.path.join(data_directory, filename), "wb")
+    while True:
+        data = connection.recv(1024)
+        while data:
+            file.write(data)
+            data = connection.recv(1024)
+        file.close()
+        break
+    print("Done receiving")
+    connection.close()
 
 
 def open_socket(port):

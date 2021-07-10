@@ -79,7 +79,7 @@ def get_wanip_path(upnp_url):
         # be accessed by the 'data' attribute.
         # When I find the right element, I take a step up into its parent and search for 'controlURL'
         print(service.childNodes[0].data)
-        if (service.childNodes[0].data.find('WANIPConnection') > 0 )or (service.childNodes[0].data.find('WANPPPConnection') > 0):
+        if (service.childNodes[0].data.find('WANIPConnection') > 0 ) or (service.childNodes[0].data.find('WANPPPConnection') > 0):
             path = service.parentNode.getElementsByTagName('controlURL')[0].childNodes[0].data
             return path, service.childNodes[0].data
 
