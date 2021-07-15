@@ -1,4 +1,5 @@
 ./Data
-./config.txt
-./connections.txt
+Cache/config.txt
+Cache/connections.txt
+./__pycache__
 .idea
