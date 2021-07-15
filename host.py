@@ -4,10 +4,13 @@ import hashlib
 import os.path
 import socket
 import random
+import json
+from settings import semaphore
 from requests import get
 import portforwardlib
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+from file_transfer_host import send_data, receive_data
 
 # public_ip = get('https://api.ipify.org').text
 public_ip = ""
@@ -20,27 +23,30 @@ data_directory = "Data"
 # thread to send heartbeat to decentorage every second
 def heart_beat():
     while True:
+        # TODO send to decentorage
         print("heartbeat")
         time.sleep(5)
 
 
 # sends message to decentorage node to notify public ip change
 def public_ip_change():
-    print("manga")
+    # TODO
+    print("IP TO DECENTORAGE")
     # send sth to decentorage node
 
 
 # on audit hash the file concatenated with the received salt
-def audit(salt, filename):
+def audit(salt, request):
     sha256_hash = hashlib.sha256()
     buffer_size = 65536  # read data in 64kb chunks
-    with open(filename, "rb") as fn:
+    with open(os.path.join(data_directory,request['shard_id']), "rb") as fn:
         # Read and update hash string value in blocks of 4K
         for byte_block in iter(lambda: fn.read(buffer_size), b""):
             sha256_hash.update(byte_block)
         print(sha256_hash.hexdigest())
         sha256_hash.update(salt.encode())
         print(sha256_hash.hexdigest())
+        # TODO send audit result to decentorage
 
 
 # if ip changes disable current port forwarding and create new port forwarding
@@ -79,28 +85,50 @@ def track_ip():
 # main thread waits for a request from decentorage node (audit/download/upload)
 def listen_for_req():
     print("waiting for req")
-    serverSocket = socket.socket()
-    serverSocket.bind((local_ip, decentorage_port))
-    serverSocket.listen(5)
+    server_socket = socket.socket()
+    server_socket.bind((local_ip, 54545))
+    server_socket.listen(5)
     while True:
-        connection, addr = serverSocket.accept()
-        request_thread = threading.Thread(target=handle_request, args=(connection,))
+        connection, addr = server_socket.accept()
+        request = connection.recv(1024).decode("utf-8")
+        request = json.loads(request)
+        request_thread = threading.Thread(target=handle_request, args=(request,))
         request_thread.start()
-    serverSocket.close()
 
 
 # thread to handle requests
-def handle_request(connection):
-    while True:
-        data = connection.recv(1024).decode("UTF-8")
-        if data:
-            print(data)
-            if data == "upload":
-                receive_file()
-            elif data == "download":
-                send_file()
-            elif data == "audit":
-                audit()
+def handle_request(request):
+    # request from decentorage
+    start = False
+    if request['port'] == 0:
+        # open port
+        start = True
+        port = open_port(False)
+
+        # add port to connections dictionary
+        print("OPENED PORT : ", port)
+        request['port'] = port
+        try:
+            connections = {}
+            semaphore.acquire()
+            with open('connections.txt') as json_file:
+                connections = json.load(json_file)
+            connections['connections'].append(request)
+            with open('connections.txt', 'w') as outfile:
+                json.dump(connections, outfile)
+            semaphore.release()
+            # TODO
+            # send port to decentorage
+        except:
+            print("Connections file corrupted")
+
+    if request['type'] == 'upload':
+        receive_data(request)
+    elif request['type'] == 'download':
+        send_data(request, start)
+    elif request['type'] == 'audit':
+        audit(request)
+
 
 
 # check that port is not in use
@@ -125,6 +153,8 @@ def open_port(decentorage=False):
         decentorage_port = port
     else:
         open_ports.append(port)
+
+    return port
 
 
 # read saved data in the config file
@@ -167,60 +197,6 @@ def update_config_file():
         f.write(str(decentorage_port) + '\n')
         for i in range(len(open_ports)):
             f.write(str(open_ports[i]) + '\n')
-
-
-# return requested file to user
-def send_file(filename):
-    # file does not exist
-    if not os.path.isfile(os.path.join(data_directory, filename)):
-        return
-
-    print("sending")
-    # open port for user
-    open_port(decentorage=False)
-    # create socket for user and wait until user connects
-    serverSocket = socket.socket()
-    serverSocket.bind((local_ip, decentorage_port))
-    serverSocket.listen(1)
-    connection, addr = serverSocket.accept()
-
-    # read and send the requested file
-    file = open(filename, "rb")
-    data = file.read(1024)
-
-    while data:
-        connection.send(data)
-        data = f.read(1024)
-    file.close()
-    print("Done sending...")
-    connection.close()
-
-
-# save uploaded file by user
-def receive_file(filename):
-    # make sure Data directory exists, If does not exist create directory
-    if not os.path.isdir(data_directory):
-        os.makedirs(data_directory)
-
-    print("receiving")
-    # open port for the user
-    open_port(decentorage=False)
-    # create socket for user and wait for user to connect
-    serverSocket = socket.socket()
-    serverSocket.bind((local_ip, decentorage_port))
-    serverSocket.listen(1)
-    connection, addr = serverSocket.accept()
-
-    file = open(os.path.join(data_directory, filename), "wb")
-    while True:
-        data = connection.recv(1024)
-        while data:
-            file.write(data)
-            data = connection.recv(1024)
-        file.close()
-        break
-    print("Done receiving")
-    connection.close()
 
 
 def open_socket(port):
