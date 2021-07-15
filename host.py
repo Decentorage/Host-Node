@@ -1,12 +1,13 @@
 import threading
 import time
+from time import sleep
 import hashlib
 import os.path
 import socket
 import random
 import requests
 import json
-from settings import semaphore
+from settings import semaphore, backend, token
 from requests import get
 import portforwardlib
 from PIL import Image, ImageDraw, ImageFont
@@ -21,11 +22,61 @@ open_ports = []
 data_directory = "Data"
 
 
+def update_connection(ip_address, port):
+    payload = {"ip_address": ip_address, "port": port}
+    r = requests.post(backend+"/storage/updateConnection", json=payload, headers={"token": token})
+    print(r.text)
+
+
+def withdraw_request(payload):
+    requests.post(backend + "/storage/withdraw", json=payload)
+
+
+def withdraw():
+    shards = os.listdir(data_directory)
+    for shard in shards:
+        payload = {"shard_id": shard}
+        withdraw_request(payload)
+
+    # send withdraw every 12 hours
+    sleep(12*60*60)
+
+
+def send_heart_beat():
+    requests.get(backend+'/storage/heartbeat', headers={"token": token})
+
+
+def login_prompt():
+    logged_in = False
+    while not logged_in:
+        username = input("Username: ")
+        password = input("Password: ")
+        logged_in = login(username, password)
+
+
+def login(username, password):
+    payload = {"username": username, "password":  password}
+    res = requests.post(backend+"/storage/signin", json=payload)
+    # Successful login
+    if res.status_code == 200:
+        print("Login Successful")
+        global token
+        token = res.json()['token']
+        # save token to text file
+        with open("auth.txt", 'w') as file:
+            file.writelines(res.json()['token'])
+        return True
+
+    # Login failed
+    else:
+        print("Incorrect username or password")
+        return False
+
 # thread to send heartbeat to decentorage every second
 def heart_beat():
     while True:
         pload = {'username': 'shady', 'password': '1234'}
-        r = requests.post('http://', data=pload)
+        r = requests.post(backend, data=pload)
 
         # TODO send to decentorage
         print("heartbeat")
@@ -189,9 +240,7 @@ def prompt_msg():
     strings = chars.view('U' + str(chars.shape[1])).flatten()
     print("\n".join(strings))
 
-    print("\n\n\nPlease Login First")
-    username = input("Username: ")
-    password = input("Password: ")
+    print("\n\n\n")
 
 
 def update_config_file():
@@ -205,7 +254,7 @@ def update_config_file():
 def open_socket(port):
     print("sock")
 # ========================= Handling config file ============================
-
+'''
 file_exists = os.path.isfile("config.txt")
 
 if file_exists:
@@ -234,7 +283,7 @@ else:
 # send public ip and port to decentorage
 public_ip_change()
 #===========================================================================
-update_config_file()
+update_config_file()'''
 
 
 
@@ -243,3 +292,15 @@ update_config_file()
 #t2 = threading.Thread(target=listen_for_req())
 
 #audit("lakjhflahlaf", "image.jpg")
+'''print(token)
+login("shady", "1234")
+print(token)
+
+update_connection("192.168.1.5", "50504")'''
+
+
+
+import psutil
+def get_free_space():
+    hdd = psutil.disk_usage('/')
+    print(hdd.free / (2**10))
