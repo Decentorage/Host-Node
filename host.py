@@ -4,6 +4,7 @@ import hashlib
 import os.path
 import socket
 import random
+import requests
 import json
 from settings import semaphore
 from requests import get
@@ -23,6 +24,9 @@ data_directory = "Data"
 # thread to send heartbeat to decentorage every second
 def heart_beat():
     while True:
+        pload = {'username': 'shady', 'password': '1234'}
+        r = requests.post('http://', data=pload)
+
         # TODO send to decentorage
         print("heartbeat")
         time.sleep(5)
@@ -128,7 +132,6 @@ def handle_request(request):
         send_data(request, start)
     elif request['type'] == 'audit':
         audit(request)
-
 
 
 # check that port is not in use
