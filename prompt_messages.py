@@ -18,7 +18,7 @@ def login_prompt():
 # prompt message on app startup
 def app_startup_msg():
     text = "DECENTORAGE"
-    my_font = ImageFont.truetype("verdanab.ttf", 12)
+    my_font = ImageFont.load_default()
     size = my_font.getsize(text)
     img = Image.new("1", size, "black")
     draw = ImageDraw.Draw(img)
