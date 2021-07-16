@@ -1,4 +1,4 @@
-./Data
-./Cache/*
-./__pycache__
-.idea
+Data/
+Cache/
+__pycache__/
+.idea/
