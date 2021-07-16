@@ -19,7 +19,7 @@ def send_data(request, start):
 
     # create socket and wait for user to connect
     server_socket = socket.socket()
-    server_socket.bind((settings.local_ip, request['port']))
+    server_socket.bind(('localhost', request['port']))
     server_socket.listen(5)
     connection, addr = server_socket.accept()
 
@@ -78,7 +78,7 @@ def receive_data(request):
 
     # create socket and wait for user to connect
     server_socket = socket.socket()
-    server_socket.bind((settings.local_ip, request['port']))
+    server_socket.bind(('localhost', request['port']))
     server_socket.listen(5)
     connection, addr = server_socket.accept()
     connected = True

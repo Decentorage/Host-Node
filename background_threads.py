@@ -20,7 +20,7 @@ def init_background_threads(s):
 def listen_for_req():
     print("waiting for requests on port ", settings.decentorage_port)
     server_socket = socket.socket()
-    server_socket.bind((settings.local_ip, settings.decentorage_port))
+    server_socket.bind(('localhost', settings.decentorage_port))
     server_socket.listen(5)
     while True:
         connection, addr = server_socket.accept()
