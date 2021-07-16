@@ -26,7 +26,7 @@ def listen_for_req():
         connection, addr = server_socket.accept()
         request = connection.recv(1024).decode("utf-8")
         request = json.loads(request)
-        request_thread = threading.Thread(target=handle_request, args=(request,))
+        request_thread = threading.Thread(target=handle_request, args=(request,connection,))
         request_thread.start()
 
 

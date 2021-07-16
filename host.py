@@ -19,13 +19,15 @@ from utils import read_config_file, init_utils
 from settings import Settings
 from api_requests import init_api_requests
 from event_handlers import init_event_handlers
-
+from file_transfer_host import init_file_transfer
 settings = Settings()
 
 init_utils(settings)
 init_background_threads(settings)
 init_api_requests(settings)
 init_event_handlers(settings)
+init_file_transfer(settings)
+
 
 app_startup_msg()
 login_prompt()

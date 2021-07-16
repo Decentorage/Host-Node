@@ -14,13 +14,14 @@ def init_event_handlers(s):
 
 
 # thread to handle requests
-def handle_request(request):
+def handle_request(request, connection=None):
     # request from decentorage
     start = False
     if request['port'] == 0:
         # open port
         start = True
         port = open_port(False)
+        connection.send(bytes(str(port), "UTF-8"))
 
         # add port to connections dictionary
         print("OPENED PORT : ", port)
