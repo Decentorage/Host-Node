@@ -15,7 +15,7 @@ from file_transfer_host import send_data, receive_data
 import api_requests
 from prompt_messages import app_startup_msg, login_prompt
 from background_threads import *
-from utils import read_config_file, init_utils
+from utils import read_config_file, init_utils, init_app
 from settings import Settings
 from api_requests import init_api_requests
 from event_handlers import init_event_handlers
@@ -28,7 +28,7 @@ init_api_requests(settings)
 init_event_handlers(settings)
 init_file_transfer(settings)
 
-
+init_app()
 app_startup_msg()
 login_prompt()
 read_config_file()
