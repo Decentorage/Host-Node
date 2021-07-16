@@ -1,5 +1,5 @@
 Data/
-Cache/
 __pycache__/
 .idea/
 venv/
+Cache/
