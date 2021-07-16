@@ -1,10 +1,13 @@
 import threading
 
-public_ip = ""
-local_ip = ""
-backend = "http://192.168.1.7:5000"
-decentorage_port = 0
-open_ports = []
-data_directory = "Data"
-semaphore = threading.Semaphore()
-token = ""
+
+class Settings:
+    def __init__(self):
+        self.backend = "http://192.168.1.3:5000"
+        self.data_directory = "Data"
+        self.cache_directory = "Cache"
+        self.public_ip = ""
+        self.local_ip = ""
+        self.token = ""
+        self.decentorage_port = 0
+        self.semaphore = threading.Semaphore()

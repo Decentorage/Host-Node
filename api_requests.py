@@ -1,16 +1,20 @@
 import requests
+settings = None
 
+
+def init_api_requests(s):
+    global settings
+    settings = s
 
 def login(username, password):
     payload = {"username": username, "password":  password}
-    res = requests.post(backend+"/storage/signin", json=payload)
+    res = requests.post(settings.backend+"/storage/signin", json=payload)
     # Successful login
     if res.status_code == 200:
         print("Login Successful")
-        global token
-        token = res.json()['token']
+        settings.token = res.json()['token']
         # save token to text file
-        with open("auth.txt", 'w') as file:
+        with open("Cache/auth.txt", 'w') as file:
             file.writelines(res.json()['token'])
         return True
 
@@ -22,14 +26,15 @@ def login(username, password):
 
 
 def send_heart_beat():
-    requests.get(backend+'/storage/heartbeat', headers={"token": token})
+    requests.get(settings.backend+'/storage/heartbeat', headers={"token": settings.token})
 
 
-def withdraw_request(payload):
-    requests.post(backend + "/storage/withdraw", json=payload, headers={"token": token})
+def withdraw_request(shard):
+    payload = {"shard_id": shard}
+    requests.post(settings.backend + "/storage/withdraw", json=payload, headers={"token": settings.token})
 
 
 def update_connection(ip_address, port):
     payload = {"ip_address": ip_address, "port": port}
-    r = requests.post(backend+"/storage/updateConnection", json=payload, headers={"token": token})
+    r = requests.post(settings.backend+"/storage/updateConnection", json=payload, headers={"token": settings.token})
     print(r.text)
