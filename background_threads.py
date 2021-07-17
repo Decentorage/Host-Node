@@ -6,7 +6,7 @@ from copy import copy
 import api_requests
 from time import sleep
 import os
-from event_handlers import handle_request, public_ip_change
+from event_handlers import handle_request, public_ip_change, local_ip_change
 from utils import get_public_ip
 import upnp
 
@@ -26,7 +26,6 @@ def listen_for_req():
     server_socket.listen(5)
     while True:
         connection, addr = server_socket.accept()
-        print("accepted request")
         request = connection.recv(1024).decode("utf-8")
         request = json.loads(request)
         print(request)
@@ -38,23 +37,22 @@ def listen_for_req():
 def heart_beat():
     while True:
         api_requests.send_heart_beat()
-        sleep(5)
+        sleep(10*60)
 
-'''
+
 # thread to track changes in ip
 def track_ip():
-    global public_ip, local_ip
     while True:
         p_ip = get_public_ip()
-        if p_ip != public_ip:
+        if p_ip != settings.public_ip:
             public_ip_change()
 
         l_ip = upnp.get_my_ip()
-        if l_ip != local_ip:
+        if l_ip != settings.local_ip:
             local_ip_change(l_ip)
 
         sleep(10)
-'''
+
 
 
 # thread that is scheduled every 12 hours to request withdraw

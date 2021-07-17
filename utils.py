@@ -28,7 +28,7 @@ def get_public_ip():
 # check that port is not in use
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
+        return (s.connect_ex(('localhost', port)) == 0 and upnp.is_port_open(port))
 
 
 # pick a random port and check that it is not in use

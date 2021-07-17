@@ -3,6 +3,7 @@ import hashlib
 from utils import open_port
 import json
 import os
+import upnp
 from file_transfer_host import send_data, receive_data
 
 settings = None
@@ -28,10 +29,10 @@ def handle_request(request, connection=None):
         try:
             connections = {}
             settings.semaphore.acquire()
-            with open('connections.txt') as json_file:
+            with open('Cache/connections.txt') as json_file:
                 connections = json.load(json_file)
             connections['connections'].append(request)
-            with open('connections.txt', 'w') as outfile:
+            with open('Cache/connections.txt', 'w') as outfile:
                 json.dump(connections, outfile)
             settings.semaphore.release()
             # TODO
@@ -66,22 +67,27 @@ def audit(salt, request):
         print(sha256_hash.hexdigest())
         # TODO send audit result to decentorage
 
-'''
+
 # if ip changes disable current port forwarding and create new port forwarding
 def local_ip_change(new_local_ip):
-    print("helwa")
+    print("Local IP changed, Change port mappings on router")
     # disable port forward on old ip for decentorage port
-    portforwardlib.forwardPort(decentorage_port, decentorage_port, router=None, lanip=local_ip,
+    upnp.forwardPort(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
                                disable=True, protocol="TCP", duration=0, description=None, verbose=True)
     # port forward on new ip for decentorage port
-    portforwardlib.forwardPort(decentorage_port, decentorage_port, router=None, lanip=new_local_ip,
+    upnp.forwardPort(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
                                disable=False, protocol="TCP", duration=0, description=None, verbose=True)
 
-    for i in range(len(open_ports)):
+
+    settings.semaphore.acquire()
+    with open('Cache/connections.txt') as json_file:
+        connections = json.load(json_file)
+    settings.semaphore.release()
+
+    for i in range(len(connections['connections'])):
         # disable port forward on old ip for open ports with clients
-        portforwardlib.forwardPort(open_ports[i], open_ports[i], router=None, lanip=local_ip,
+        upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=settings.local_ip,
                                    disable=True, protocol="TCP", duration=0, description=None, verbose=True)
         # port forward on new ip for open ports with clients
-        portforwardlib.forwardPort(open_ports[i], open_ports[i], router=None, lanip=new_local_ip,
+        upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=new_local_ip,
                                    disable=False, protocol="TCP", duration=0, description=None, verbose=True)
-'''
