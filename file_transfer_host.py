@@ -22,7 +22,7 @@ def send_data(request, start):
     # create socket and wait for user to connect
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)
-    socket.bind("tcp://"+settings.local_ip+":"+request['port'])
+    socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
 
     # server_socket = socket.socket()
     # server_socket.bind((settings.local_ip, request['port']))
