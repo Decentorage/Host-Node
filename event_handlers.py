@@ -21,7 +21,6 @@ def handle_request(request, connection=None):
         # open port
         start = True
         port = open_port(False)
-        connection.send(bytes(str(port), "UTF-8"))
 
         # add port to connections dictionary
         print("OPENED PORT : ", port)
@@ -37,6 +36,7 @@ def handle_request(request, connection=None):
             settings.semaphore.release()
             # TODO
             # send port to decentorage
+            connection.send(bytes(str(port), "UTF-8"))
         except:
             print("Connections file corrupted")
 
