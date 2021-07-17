@@ -83,9 +83,6 @@ def receive_data(request):
         os.makedirs(settings.data_directory)
 
     # create socket and wait for user to connect
-    # server_socket = socket.socket()
-    # server_socket.bind((settings.local_ip, request['port']))
-    # server_socket.listen(5)
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)
     socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
@@ -103,11 +100,14 @@ def receive_data(request):
     # if file does not exist, start upload
     # else:
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
-
     # receive till end of shard
     try:
-        data = pickle.loads(socket.recv())["data"]
-        f.write(data)
+        data = socket.recv()
+        while data:
+            data = pickle.loads(socket.recv())["data"]
+            f.write(data)
+            data = socket.recv()
+
         f.close()
 
     # disconnected
