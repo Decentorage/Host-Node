@@ -62,10 +62,10 @@ def send_data(request, start):
     # use semaphore on file to make sure it is not used by another thread
     connections = {}
     settings.semaphore.acquire()
-    with open('connections.txt') as json_file:
+    with open('Cache/connections.txt') as json_file:
         connections = json.load(json_file)
     connections['connections'].remove(request)
-    with open('connections.txt', 'w') as outfile:
+    with open('Cache/connections.txt', 'w') as outfile:
         json.dump(connections, outfile)
     settings.semaphore.release()
     print("Done sending...")
@@ -141,10 +141,10 @@ def receive_data(request):
     # use semaphore on file to make sure it is not used by another thread
     connections = {}
     settings.semaphore.acquire()
-    with open('connections.txt') as json_file:
+    with open('Cache/connections.txt') as json_file:
         connections = json.load(json_file)
     connections['connections'].remove(request)
-    with open('connections.txt', 'w') as outfile:
+    with open('Cache/connections.txt', 'w') as outfile:
         json.dump(connections, outfile)
     settings.semaphore.release()
 

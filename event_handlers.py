@@ -27,17 +27,20 @@ def handle_request(request, connection=None):
         request['port'] = port
         try:
             connections = {}
+            print("waiit for semaphore")
             settings.semaphore.acquire()
-            with open('connections.txt') as json_file:
+            print("got semaphore")
+            with open('Cache/connections.txt') as json_file:
                 connections = json.load(json_file)
             connections['connections'].append(request)
-            with open('connections.txt', 'w') as outfile:
+            with open('Cache/connections.txt', 'w') as outfile:
                 json.dump(connections, outfile)
             settings.semaphore.release()
             # TODO
             # send port to decentorage
             connection.send(bytes(str(port), "UTF-8"))
-        except:
+        except Exception as e:
+            print(e)
             print("Connections file corrupted")
 
     if request['type'] == 'upload':
