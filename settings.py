@@ -7,7 +7,7 @@ class Settings:
         self.data_directory = "Data"
         self.cache_directory = "Cache"
         self.public_ip = ""
-        self.local_ip = ""
+        self.local_ip = ''
         self.token = ""
         self.decentorage_port = 0
         self.semaphore = threading.Semaphore()

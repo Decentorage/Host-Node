@@ -34,10 +34,10 @@ login_prompt()
 read_config_file()
 
 t1 = threading.Thread(target=listen_for_req())
-t2 = threading.Thread(target=heart_beat())
+#t2 = threading.Thread(target=heart_beat())
 
 t1.start()
-t2.start()
+#t2.start()
 
 while True:
     pass

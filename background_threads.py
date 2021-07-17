@@ -1,6 +1,8 @@
 import socket
 import threading
 import json
+from copy import copy
+
 import api_requests
 from time import sleep
 import os
@@ -20,12 +22,16 @@ def init_background_threads(s):
 def listen_for_req():
     print("waiting for requests on port ", settings.decentorage_port)
     server_socket = socket.socket()
-    server_socket.bind(('localhost', settings.decentorage_port))
+    print(settings.local_ip)
+    print(type(settings.local_ip))
+    server_socket.bind((settings.local_ip, settings.decentorage_port))
     server_socket.listen(5)
     while True:
         connection, addr = server_socket.accept()
+        print("accepted request")
         request = connection.recv(1024).decode("utf-8")
         request = json.loads(request)
+        print(request)
         request_thread = threading.Thread(target=handle_request, args=(request,connection,))
         request_thread.start()
 

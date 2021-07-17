@@ -60,7 +60,7 @@ def read_config_file():
     file = open("Cache/config.txt", "r")
     lines = file.readlines()
 
-    settings.local_ip = lines[0]
+    settings.local_ip = lines[0].replace(" ", "").strip()
     settings.decentorage_port = int(lines[1])
 
     file.close()
