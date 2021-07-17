@@ -3,6 +3,8 @@ from time import sleep
 import os
 import threading
 import json
+import zmq
+import pickle
 
 settings = None
 
@@ -18,10 +20,14 @@ def send_data(request, start):
         return
 
     # create socket and wait for user to connect
-    server_socket = socket.socket()
-    server_socket.bind((settings.local_ip, request['port']))
-    server_socket.listen(5)
-    connection, addr = server_socket.accept()
+    context = zmq.Context()
+    socket = context.socket(zmq.PAIR)
+    socket.bind("tcp://"+settings.local_ip+":"+request['port'])
+
+    # server_socket = socket.socket()
+    # server_socket.bind((settings.local_ip, request['port']))
+    # server_socket.listen(5)
+    # connection, addr = server_socket.accept()
 
     # Read file
     f = open(os.path.join(settings.data_directory, request['shard_id']), "rb")
@@ -77,63 +83,54 @@ def receive_data(request):
         os.makedirs(settings.data_directory)
 
     # create socket and wait for user to connect
-    server_socket = socket.socket()
-    server_socket.bind((settings.local_ip, request['port']))
-    server_socket.listen(5)
-    connection, addr = server_socket.accept()
+    # server_socket = socket.socket()
+    # server_socket.bind((settings.local_ip, request['port']))
+    # server_socket.listen(5)
+    context = zmq.Context()
+    socket = context.socket(zmq.PAIR)
+    socket.bind("tcp://"+settings.local_ip+":"+request['port'])
+    
     connected = True
     f = None
 
     # if file exists, resume upload, open in append mode, inform sender where it has stopped
-    if os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
-        connection.send(bytes(str(os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))), "UTF-8"))
-        f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
-        print(f.tell())
+    # TODO resume sending
+    # if os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
+    #     connection.send(bytes(str(os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))), "UTF-8"))
+    #     f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
+    #     print(f.tell())
 
     # if file does not exist, start upload
-    else:
-        f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
+    # else:
+    f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
 
     # receive till end of shard
-    while True:
-        try:
-            data = connection.recv(1024)
-            while len(data) != 0:
-                # Done uploading
-                if data == bytes("END", "UTF-8"):
-                    break
+    try:
+        data = pickle.loads(socket.recv())["data"]
+        f.write(data)
+        f.close()
 
-                f.write(data)
-                data = connection.recv(1024)
+    # disconnected
+    except:
+        # set connection status and recreate socket
+        connected = False
+        print("connection lost.")
+        # try to reconnect
+        # while not connected:
+        #     # attempt to reconnect, otherwise sleep for 2 seconds
+        #     try:
+        #         connection, addr = server_socket.accept()
+        #         connected = True
+        #         f.close()
+        #         # on reconnect, inform user where it has stopped
+        #         connection.send(bytes(str(os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))), "UTF-8"))
+        #         f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
+        #         print("re-connection successful")
+        #     except socket.error:
+        #         sleep(2)
+        #         print("sleep")
 
-                # Disconnected
-                if len(data) == 0:
-                    raise
-
-            f.close()
-            break
-
-        # disconnected
-        except:
-            # set connection status and recreate socket
-            connected = False
-            print("connection lost... reconnecting")
-            # try to reconnect
-            while not connected:
-                # attempt to reconnect, otherwise sleep for 2 seconds
-                try:
-                    connection, addr = server_socket.accept()
-                    connected = True
-                    f.close()
-                    # on reconnect, inform user where it has stopped
-                    connection.send(bytes(str(os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))), "UTF-8"))
-                    f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
-                    print("re-connection successful")
-                except socket.error:
-                    sleep(2)
-                    print("sleep")
-
-    connection.close()
+    socket.close()
     print("CLOSE PORT : ", request['port'])
     # TODO CLOSE PORT OPENED ON ROUTER
 
