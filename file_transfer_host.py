@@ -98,7 +98,7 @@ def receive_data(request):
     while True:
         try:
             data = connection.recv(1024)
-            while data:
+            while len(data) != 0:
                 # Done uploading
                 if data == bytes("END", "UTF-8"):
                     break
@@ -107,7 +107,7 @@ def receive_data(request):
                 data = connection.recv(1024)
 
                 # Disconnected
-                if not data:
+                if len(data) == 0:
                     raise
 
             f.close()
