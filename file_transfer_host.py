@@ -88,7 +88,7 @@ def receive_data(request):
     # server_socket.listen(5)
     context = zmq.Context()
     socket = context.socket(zmq.PAIR)
-    socket.bind("tcp://"+settings.local_ip+":"+request['port'])
+    socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
     
     connected = True
     f = None
