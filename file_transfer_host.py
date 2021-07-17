@@ -104,7 +104,7 @@ def receive_data(request):
     try:
         data = socket.recv()
         while data:
-            data = pickle.loads(socket.recv())["data"]
+            data = pickle.loads(data)["data"]
             f.write(data)
             data = socket.recv()
 
