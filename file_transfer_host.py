@@ -109,7 +109,7 @@ def receive_data(request):
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
     # receive till end of shard or connection failed and unable to reconnect
     server_socket.RCVTIMEO = 1000
-    server_socket.SNDTIMO = 1000
+    server_socket.SNDTIMEO = 1000
 
     while True:
         try:
@@ -146,7 +146,7 @@ def receive_data(request):
                 start_frame = pickle.dumps(start_frame)
                 server_socket.send(start_frame)
                 print("re-connection successful")
-                server_socket.SNDTIMO = 1000
+                server_socket.SNDTIMEO = 1000
 
                 f.close()
                 # on reconnect, inform user where it has stopped
