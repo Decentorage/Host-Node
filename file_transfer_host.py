@@ -84,31 +84,38 @@ def receive_data(request):
 
     # create socket and wait for user to connect
     context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
+    server_socket = context.socket(zmq.PAIR)
+    server_socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
     
     connected = True
     f = None
 
     # if file exists, resume upload, open in append mode, inform sender where it has stopped
     # TODO resume sending
-    # if os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
-    #     connection.send(bytes(str(os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))), "UTF-8"))
-    #     f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
-    #     print(f.tell())
+    if os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
+        resume_msg = os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))
+        resume_frame = {"type": "resume", "data": resume_msg}
+        resume_frame = pickle.dumps(resume_frame)
+        server_socket.send(resume_frame)
+        f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
+        print(f.tell())
 
     # if file does not exist, start upload
     # else:
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
     # receive till end of shard
     try:
-        data = socket.recv()
-        while data:
-            data = pickle.loads(data)["data"]
-            f.write(data)
-            data = socket.recv()
-
-        f.close()
+        while True:
+            frame = server_socket.recv()
+            if not frame:
+                print("disconnected")
+                raise
+            frame = pickle.loads(frame)
+            if frame["type"] == "data":
+                data = frame["data"]
+                f.write(data)
+            elif frame["type"] == "END":
+                break
 
     # disconnected
     except:
@@ -116,21 +123,26 @@ def receive_data(request):
         connected = False
         print("connection lost.")
         # try to reconnect
-        # while not connected:
-        #     # attempt to reconnect, otherwise sleep for 2 seconds
-        #     try:
-        #         connection, addr = server_socket.accept()
-        #         connected = True
-        #         f.close()
-        #         # on reconnect, inform user where it has stopped
-        #         connection.send(bytes(str(os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))), "UTF-8"))
-        #         f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
-        #         print("re-connection successful")
-        #     except socket.error:
-        #         sleep(2)
-        #         print("sleep")
+        while not connected:
+            # attempt to reconnect, otherwise sleep for 2 seconds
+            try:
+                server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
+                connected = True
+                f.close()
+                # on reconnect, inform user where it has stopped
+                file_size = os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))
+                resume_frame = {"type": "resume", "data": file_size}
+                resume_frame = pickle.dumps(resume_frame)
+                server_socket.send(resume_frame)
 
-    socket.close()
+                f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
+                print("re-connection successful")
+            except socket.error:
+                sleep(2)
+                print("sleep")
+
+    f.close()
+    server_socket.close()
     print("CLOSE PORT : ", request['port'])
     # TODO CLOSE PORT OPENED ON ROUTER
 
