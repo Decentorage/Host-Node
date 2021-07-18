@@ -86,7 +86,11 @@ def receive_data(request):
     context = zmq.Context()
     server_socket = context.socket(zmq.PAIR)
     server_socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
-    
+
+    start_frame = {"type": "start"}
+    start_frame = pickle.dumps(start_frame)
+    server_socket.send(start_frame)
+
     connected = True
     f = None
 
@@ -103,31 +107,47 @@ def receive_data(request):
     # if file does not exist, start upload
     # else:
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
-    # receive till end of shard
-    try:
-        while True:
+    # receive till end of shard or connection failed and unable to reconnect
+    server_socket.RCVTIMEO = 1000
+    server_socket.SNDTIMO = 1000
+
+    while True:
+        try:
             frame = server_socket.recv()
-            if not frame:
-                print("disconnected")
-                raise
             frame = pickle.loads(frame)
+
             if frame["type"] == "data":
+                ack_frame = {"type": "ACK"}
+                ack_frame = pickle.loads(ack_frame)
+                server_socket.send(ack_frame)
+
                 data = frame["data"]
                 f.write(data)
+
             elif frame["type"] == "END":
                 break
 
-    # disconnected
-    except:
-        # set connection status and recreate socket
-        connected = False
-        print("connection lost.")
-        # try to reconnect
-        while not connected:
-            # attempt to reconnect, otherwise sleep for 2 seconds
+        # disconnected
+        except:
+            # set connection status and recreate socket
+            print("connection lost.")
+            # try to reconnect
             try:
+                server_socket.close()
+                context = zmq.Context()
+                server_socket = context.socket(zmq.PAIR)
                 server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
-                connected = True
+                # time out 1 hour for reconnecting
+                server_socket.SNDTIMEO = 1000*60*60
+
+
+                # if messaege delivered, reconnected to user
+                start_frame = {"type": "start"}
+                start_frame = pickle.dumps(start_frame)
+                server_socket.send(start_frame)
+                print("re-connection successful")
+                server_socket.SNDTIMO = 1000
+
                 f.close()
                 # on reconnect, inform user where it has stopped
                 file_size = os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))
@@ -136,10 +156,9 @@ def receive_data(request):
                 server_socket.send(resume_frame)
 
                 f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
-                print("re-connection successful")
             except socket.error:
-                sleep(2)
-                print("sleep")
+                print("Unable to reconnect, closing connection")
+                break
 
     f.close()
     server_socket.close()
