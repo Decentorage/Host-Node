@@ -118,7 +118,7 @@ def receive_data(request):
 
             if frame["type"] == "data":
                 ack_frame = {"type": "ACK"}
-                ack_frame = pickle.loads(ack_frame)
+                ack_frame = pickle.dumps(ack_frame)
                 server_socket.send(ack_frame)
 
                 data = frame["data"]
