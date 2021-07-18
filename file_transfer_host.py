@@ -57,7 +57,7 @@ def send_data(request, start):
 
             # receive Ack from user
             #ack_frame = server_socket.recv()
-            #data = f.read(1024)
+            data = f.read(1024)
 
         # in case of disconnection
         except:
