@@ -21,46 +21,83 @@ def send_data(request, start):
 
     # create socket and wait for user to connect
     context = zmq.Context()
-    socket = context.socket(zmq.PAIR)
-    socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
+    server_socket = context.socket(zmq.PAIR)
+    server_socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
 
-    # server_socket = socket.socket()
-    # server_socket.bind((settings.local_ip, request['port']))
-    # server_socket.listen(5)
-    # connection, addr = server_socket.accept()
+    # send start frame
+    start_frame = {"type": "start"}
+    start_frame = pickle.dumps(start_frame)
+    server_socket.send(start_frame)
 
     # Read file
     f = open(os.path.join(settings.data_directory, request['shard_id']), "rb")
     # if disconnected, resume sending
     if not start:
         # get from receiver where it has stopped
-        resume_msg = connection.recv(1024).decode("UTF-8")
-        print(resume_msg)
+        resume_frame = server_socket.recv()
+        resume_frame = pickle.loads(resume_frame)
+        resume_msg = resume_frame["data"]
+        f.seek(resume_msg, 0)
+        print("Resume sending from ", resume_msg)
         # seek to the last point the user has received
-        f.seek(int(resume_msg), 0)
+        f.seek(resume_msg, 0)
 
     data = f.read(1024)
+    server_socket.SNDTIMEO = 1000
+
     # send until the end of the file
     while data:
         try:
-            connection.send(data)
-            data = f.read(1024)
-        # in case of disconnection
-        except socket.error:
-            print("disconnected")
-            # wait for user to reconnect
-            connection, addr = server_socket.accept()
-            # get from receiver where it has stopped
-            resume_msg = connection.recv(1024).decode("UTF-8")
-            print(resume_msg)
-            # seek to the point the user has received
-            f.seek(int(resume_msg), 0)
-            data = f.read(1024)
-            print("reconnecting")
+            # send data frame to user
+            data_frame = {"type": "data", "data": data}
+            data_frame = pickle.dumps(data_frame)
+            server_socket.send(data_frame)
 
+            # receive Ack from user
+            #ack_frame = server_socket.recv()
+            #data = f.read(1024)
+
+        # in case of disconnection
+        except:
+            print("Disconnected")
+            try:
+                server_socket.close()
+                context = zmq.Context()
+                server_socket = context.socket(zmq.PAIR)
+                server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
+                # time out 1 hour for reconnecting
+                server_socket.SNDTIMEO = 1000*60*60
+
+                # wait for user to reconnect
+                # if messaege delivered, reconnected to user
+                start_frame = {"type": "start"}
+                start_frame = pickle.dumps(start_frame)
+                server_socket.send(start_frame)
+                print("Reconnected successfully")
+
+                # get from receiver where it has stopped
+                resume_frame = server_socket.recv()
+                resume_frame = pickle.loads(resume_frame)
+                resume_msg = resume_frame["data"]
+                print(resume_msg)
+                f.seek(resume_msg, 0)
+                print("Resume sending from ", resume_msg)
+                # seek to the last point the user has received
+
+                server_socket.SNDTIMEO = 1000
+                f.seek(resume_msg, 0)
+                data = f.read(1024)
+
+            except:
+                print("Unable to reconnect, terminating connection")
+                break
+
+    end_frame = {"type": "END"}
+    end_frame = pickle.dumps(end_frame)
+    server_socket.send(end_frame)
     # terminate connection after complete transmission
     f.close()
-    connection.close()
+    server_socket.close()
     print("CLOSE PORT : ", request['port'])
     # TODO CLOSE OPEN PORT AT ROUTER
 
