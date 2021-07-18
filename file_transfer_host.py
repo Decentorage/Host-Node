@@ -28,11 +28,13 @@ def send_data(request, start):
     start_frame = {"type": "start"}
     start_frame = pickle.dumps(start_frame)
     server_socket.send(start_frame)
+    print("sent start frame")
 
     # Read file
     f = open(os.path.join(settings.data_directory, request['shard_id']), "rb")
     # if disconnected, resume sending
     if not start:
+        print("Resume")
         # get from receiver where it has stopped
         resume_frame = server_socket.recv()
         resume_frame = pickle.loads(resume_frame)
@@ -92,9 +94,11 @@ def send_data(request, start):
                 print("Unable to reconnect, terminating connection")
                 break
 
+    print("sending end frame")
     end_frame = {"type": "END"}
     end_frame = pickle.dumps(end_frame)
     server_socket.send(end_frame)
+    print("sent end frame")
     # terminate connection after complete transmission
     f.close()
     server_socket.close()
