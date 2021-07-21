@@ -45,7 +45,7 @@ def send_data(request, start):
         # seek to the last point the user has received
         f.seek(resume_msg, 0)
 
-    data = f.read(1024)
+    data = f.read(settings.chunk_size)
     server_socket.SNDTIMEO = 1000
 
     # send until the end of the file
@@ -58,7 +58,7 @@ def send_data(request, start):
 
             # receive Ack from user
             #ack_frame = server_socket.recv()
-            data = f.read(1024)
+            data = f.read(settings.chunk_size)
 
         # in case of disconnection
         except:
@@ -89,7 +89,7 @@ def send_data(request, start):
 
                 server_socket.SNDTIMEO = 1000
                 f.seek(resume_msg, 0)
-                data = f.read(1024)
+                data = f.read(settings.chunk_size)
 
             except:
                 print("Unable to reconnect, terminating connection")
