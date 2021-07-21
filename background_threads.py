@@ -7,7 +7,7 @@ import api_requests
 from time import sleep
 import os
 from event_handlers import handle_request, public_ip_change, local_ip_change
-from utils import get_public_ip
+from utils import get_public_ip, update_config_file
 import upnp
 
 settings = None
@@ -45,14 +45,15 @@ def track_ip():
     while True:
         p_ip = get_public_ip()
         if p_ip != settings.public_ip:
+            settings.public_ip = p_ip
             public_ip_change()
 
         l_ip = upnp.get_my_ip()
         if l_ip != settings.local_ip:
             local_ip_change(l_ip)
+            update_config_file()
 
         sleep(10)
-
 
 
 # thread that is scheduled every 12 hours to request withdraw

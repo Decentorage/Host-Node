@@ -5,6 +5,7 @@ import threading
 import json
 import zmq
 import pickle
+from api_requests import done_uploading
 
 settings = None
 
@@ -204,6 +205,7 @@ def receive_data(request):
     f.close()
     server_socket.close()
     print("CLOSE PORT : ", request['port'])
+    done_uploading(request["shard_id"])
     # TODO CLOSE PORT OPENED ON ROUTER
 
     # remove from text file

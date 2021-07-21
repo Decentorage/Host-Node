@@ -16,6 +16,11 @@ def init_event_handlers(s):
 
 # thread to handle requests
 def handle_request(request, connection=None):
+    if request['type'] == 'audit':
+        res = audit(request, connection)
+        connection.send(bytes(res, "UTF-8"))
+        return
+
     # request from decentorage
     start = False
     if request['port'] == 0:
@@ -49,8 +54,6 @@ def handle_request(request, connection=None):
         receive_data(request)
     elif request['type'] == 'download':
         send_data(request, start)
-    elif request['type'] == 'audit':
-        audit(request)
 
 
 # sends message to decentorage node to notify public ip change
@@ -66,9 +69,9 @@ def audit(salt, request):
         # Read and update hash string value in blocks of 4K
         for byte_block in iter(lambda: fn.read(buffer_size), b""):
             sha256_hash.update(byte_block)
-        print(sha256_hash.hexdigest())
+        #print(sha256_hash.hexdigest())
         sha256_hash.update(salt.encode())
-        print(sha256_hash.hexdigest())
+        return sha256_hash.hexdigest()
         # TODO send audit result to decentorage
 
 
@@ -76,10 +79,10 @@ def audit(salt, request):
 def local_ip_change(new_local_ip):
     print("Local IP changed, Change port mappings on router")
     # disable port forward on old ip for decentorage port
-    upnp.forwardPort(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
+    upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
                                disable=True, protocol="TCP", duration=0, description=None, verbose=True)
     # port forward on new ip for decentorage port
-    upnp.forwardPort(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
+    upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
                                disable=False, protocol="TCP", duration=0, description=None, verbose=True)
 
 
@@ -95,3 +98,5 @@ def local_ip_change(new_local_ip):
         # port forward on new ip for open ports with clients
         upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=new_local_ip,
                                    disable=False, protocol="TCP", duration=0, description=None, verbose=True)
+
+    settings.local_ip = new_local_ip

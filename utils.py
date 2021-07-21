@@ -25,10 +25,10 @@ def get_public_ip():
     return pub_ip
 
 
-# check that port is not in use
+# check that port is not in use by any other process and not forwarded by router
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return (s.connect_ex(('localhost', port)) == 0 and upnp.is_port_open(port))
+        return (s.connect_ex(('localhost', port)) == 0 or upnp.is_port_open(port))
 
 
 # pick a random port and check that it is not in use
@@ -50,7 +50,7 @@ def open_port(decentorage=False):
             if not is_port_in_use(port):
                 opened = True
 
-        '''            portforwardlib.forwardPort(port, port, router=None, lanip=local_ip,
+        '''            upnp.forwardPort(port, port, router=None, lanip=local_ip,
                                                disable=False, protocol="TCP", time=0, description=None, verbose=True)'''
     return port
 
@@ -88,10 +88,10 @@ def init_app():
 
         settings.local_ip = upnp.get_my_ip()
         settings.decentorage_port = open_port(True)
+        # save local ip and decentorage port to config file
         update_config_file()
 
     try:
         settings.public_ip = get_public_ip()
     except:
         print("Check your internet connection")
-
