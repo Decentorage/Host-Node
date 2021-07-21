@@ -253,7 +253,7 @@ def forward_port(eport, iport, router, lanip, disable, protocol, duration, descr
 
 
 # check router table of port mapping to se if port already used
-def is_port_open(eport, iport, router, lanip, disable, protocol, duration, description, verbose):
+def is_port_open(eport, iport=None, router=None, lanip=None, disable=None, protocol=None, duration=None, description=None, verbose=None):
     # discover UPnP enabled routers till find a router or timeout
     # SSDP uses UDP, send request multiple times to make sure packet is not lost
     res = discover()

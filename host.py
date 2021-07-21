@@ -25,7 +25,7 @@ if l_ip != settings.local_ip:
     local_ip_change(l_ip)
     update_config_file()
 
-update_connection(settings.public_ip, str(settings.decentorage_port))
+update_connection(settings.local_ip, str(settings.decentorage_port))
 
 t1 = threading.Thread(target=listen_for_req)
 #t2 = threading.Thread(target=heart_beat())
