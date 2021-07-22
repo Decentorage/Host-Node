@@ -5,6 +5,7 @@ import random
 import os
 import requests
 import upnp
+import zmq
 
 settings = None
 
@@ -27,8 +28,18 @@ def get_public_ip():
 
 # check that port is not in use by any other process and not forwarded by router
 def is_port_in_use(port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return (s.connect_ex(('localhost', port)) == 0 and upnp.is_port_open(port))
+    used = False
+    try:
+        context = zmq.Context()
+        socket = context.socket(zmq.PAIR)
+        socket.bind("tcp://127.0.0.1:" + str(port))
+        socket.close()
+    except:
+        used = True
+        socket.close()
+
+    return used
+    #return (used or upnp.is_port_open(port))
 
 
 # pick a random port and check that it is not in use
