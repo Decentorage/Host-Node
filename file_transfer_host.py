@@ -46,7 +46,7 @@ def send_data(request, start):
         f.seek(resume_msg, 0)
 
     data = f.read(settings.chunk_size)
-    server_socket.SNDTIMEO = 1000
+    server_socket.SNDTIMEO = 10000
 
     # send until the end of the file
     while data:
@@ -127,11 +127,13 @@ def receive_data(request):
     # create socket and wait for user to connect
     context = zmq.Context()
     server_socket = context.socket(zmq.PAIR)
-    server_socket.bind("tcp://"+settings.local_ip+":"+str(request['port']))
+    server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
 
     start_frame = {"type": "start"}
     start_frame = pickle.dumps(start_frame)
+    print("sending start frame")
     server_socket.send(start_frame)
+    print("start frame sent")
 
     connected = True
     f = None
@@ -150,14 +152,14 @@ def receive_data(request):
     # else:
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
     # receive till end of shard or connection failed and unable to reconnect
-    server_socket.RCVTIMEO = 1000
-    server_socket.SNDTIMEO = 1000
-
+    server_socket.RCVTIMEO = 10000
+    server_socket.SNDTIMEO = 10000
+    print("starting receiving data")
     while True:
         try:
             frame = server_socket.recv()
             frame = pickle.loads(frame)
-
+            print("received frame of type ", frame["type"])
             if frame["type"] == "data":
                 ack_frame = {"type": "ACK"}
                 ack_frame = pickle.dumps(ack_frame)
@@ -186,6 +188,7 @@ def receive_data(request):
                 # if messaege delivered, reconnected to user
                 start_frame = {"type": "start"}
                 start_frame = pickle.dumps(start_frame)
+
                 server_socket.send(start_frame)
                 print("re-connection successful")
                 server_socket.SNDTIMEO = 1000
@@ -196,7 +199,7 @@ def receive_data(request):
                 resume_frame = {"type": "resume", "data": file_size}
                 resume_frame = pickle.dumps(resume_frame)
                 server_socket.send(resume_frame)
-
+                print("sent resume frame")
                 f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
             except socket.error:
                 print("Unable to reconnect, closing connection")

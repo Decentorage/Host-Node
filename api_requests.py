@@ -54,3 +54,7 @@ def done_uploading(shard_id):
         requests.post(settings.backend + "/storage/shardDoneUploading", json=payload, headers={"token": settings.token})
     except:
         print("Can not go online")
+
+
+def get_active_contracts():
+    return requests.get(settings.backend + "/storage/activeContracts", headers={"token": settings.token})

@@ -29,7 +29,7 @@ update_connection(settings.local_ip, str(settings.decentorage_port))
 
 t1 = threading.Thread(target=listen_for_req)
 t2 = threading.Thread(target=heart_beat)
-t3 = threading.Thread(target=track_ip)
+#t3 = threading.Thread(target=track_ip)
 t4 = threading.Thread(target=withdraw)
 
 t1.start()

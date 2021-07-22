@@ -8,7 +8,7 @@ class Settings:
         self.cache_directory = "Cache"
         self.chunk_size = 10*(2**20)
         self.public_ip = ""
-        self.local_ip = ''
+        self.local_ip = ""
         self.token = ""
         self.decentorage_port = 0
         self.semaphore = threading.Semaphore()
