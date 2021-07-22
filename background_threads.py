@@ -58,9 +58,16 @@ def track_ip():
 
 # thread that is scheduled every 12 hours to request withdraw
 # send shard id to decentorage, decentorage checks if host should be paid or not
+# thread checks first if the shard is in active contracts, if no it deletes the shard
 def withdraw():
     shards = os.listdir(settings.data_directory)
+    active_shards = api_requests.get_active_contracts()
+
     for shard in shards:
+        if shard not in active_shards:
+            os.unlink(os.path.join(settings.data_directory, shard))
+            continue
+
         api_requests.withdraw_request(shard)
 
     # send withdraw every 12 hours
