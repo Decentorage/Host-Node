@@ -22,18 +22,20 @@ def discover():
     WAIT = 1
 
     # Request sent to router to get list of routers with enabled UPnP
-    ssdpRequest = "M-SEARCH * HTTP/1.1\r\n" + \
-                    "HOST: %s:%d\r\n" % (SSDP_ADDR, SSDP_PORT) + \
-                    "MAN: \"ssdp:discover\"\r\n" + \
-                    "MX: %d\r\n" % (SSDP_MX, ) + \
-                    "ST: %s\r\n" % (SSDP_ST, ) + "\r\n"
+    ssdpRequest =  \
+    'M-SEARCH * HTTP/1.1\r\n' \
+    'HOST:239.255.255.250:1900\r\n' \
+    'ST:upnp:rootdevice\r\n' \
+    'MX:2\r\n' \
+    'MAN:"ssdp:discover"\r\n' \
+    '\r\n'
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setblocking(0)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.sendto(ssdpRequest.encode(), (SSDP_ADDR, SSDP_PORT))
-    time.sleep(WAIT)
+    sock.settimeout(2)
+
     paths = []
-    for _ in range(10):
+    while True:
         try:
             data, fromaddr = sock.recvfrom(1024)
 
@@ -45,9 +47,9 @@ def discover():
             # use the urlparse function to create an easy to use object to hold a URL
             router_path = location[0][1]
             paths.append(router_path)
+            break
 
         except socket.error:
-            '''no data yet'''
             break
 
     return paths
