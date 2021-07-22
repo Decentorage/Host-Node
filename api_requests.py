@@ -58,5 +58,8 @@ def done_uploading(shard_id):
 
 def get_active_contracts():
     res = requests.get(settings.backend + "/storage/activeContracts", headers={"token": settings.token})
-    print(res)
-    return res
+    success = False
+    if res.status_code == 200:
+        success = True
+
+    return res.json()["shards"], success
