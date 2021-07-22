@@ -57,4 +57,6 @@ def done_uploading(shard_id):
 
 
 def get_active_contracts():
-    return requests.get(settings.backend + "/storage/activeContracts", headers={"token": settings.token})
+    res = requests.get(settings.backend + "/storage/activeContracts", headers={"token": settings.token})
+    print(res)
+    return res

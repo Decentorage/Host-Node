@@ -62,6 +62,8 @@ def track_ip():
 def withdraw():
     shards = os.listdir(settings.data_directory)
     active_shards = api_requests.get_active_contracts()
+    active_shards = active_shards["shards"]
+    print(active_shards)
 
     for shard in shards:
         if shard not in active_shards:

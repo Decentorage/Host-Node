@@ -1,7 +1,7 @@
 import threading
 
 
-from prompt_messages import app_startup_msg, login_prompt
+from prompt_messages import app_startup_msg, login_prompt, resume_old_connections
 from background_threads import *
 from utils import read_config_file, init_utils, init_app
 from settings import Settings
@@ -26,6 +26,7 @@ if l_ip != settings.local_ip:
     update_config_file()
 
 update_connection(settings.local_ip, str(settings.decentorage_port))
+#resume_old_connections()
 
 t1 = threading.Thread(target=listen_for_req)
 t2 = threading.Thread(target=heart_beat)
