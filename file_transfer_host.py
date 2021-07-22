@@ -18,6 +18,7 @@ def init_file_transfer(s):
 def send_data(request, start):
     # file does not exist
     if not os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
+        print("shard does not exist")
         return
 
     # create socket and wait for user to connect
@@ -47,7 +48,7 @@ def send_data(request, start):
 
     data = f.read(settings.chunk_size)
     server_socket.SNDTIMEO = 10000
-
+    server_socket.RCVTIMEO = 10000
     # send until the end of the file
     while data:
         try:
@@ -55,9 +56,10 @@ def send_data(request, start):
             data_frame = {"type": "data", "data": data}
             data_frame = pickle.dumps(data_frame)
             server_socket.send(data_frame)
-
+            print("sent frame ", data_frame["type"])
             # receive Ack from user
-            #ack_frame = server_socket.recv()
+            ack_frame = server_socket.recv()
+            print("Received frame ", ack_frame["type"])
             data = f.read(settings.chunk_size)
 
         # in case of disconnection
@@ -70,7 +72,7 @@ def send_data(request, start):
                 server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
                 # time out 1 hour for reconnecting
                 server_socket.SNDTIMEO = 1000*60*60
-
+                server_socket.RCVTIMEO = 10000*60*60
                 # wait for user to reconnect
                 # if messaege delivered, reconnected to user
                 start_frame = {"type": "start"}
@@ -87,7 +89,8 @@ def send_data(request, start):
                 print("Resume sending from ", resume_msg)
                 # seek to the last point the user has received
 
-                server_socket.SNDTIMEO = 1000
+                server_socket.SNDTIMEO = 10000
+                server_socket.RCVTIMEO = 10000
                 f.seek(resume_msg, 0)
                 data = f.read(settings.chunk_size)
 
