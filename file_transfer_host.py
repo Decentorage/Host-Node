@@ -47,8 +47,8 @@ def send_data(request, start):
         f.seek(resume_msg, 0)
 
     data = f.read(settings.chunk_size)
-    server_socket.SNDTIMEO = 20000
-    server_socket.RCVTIMEO = 20000
+    server_socket.SNDTIMEO = 30000
+    server_socket.RCVTIMEO = 30000
     # send until the end of the file
     while data:
         try:
@@ -64,7 +64,7 @@ def send_data(request, start):
             data = f.read(settings.chunk_size)
 
         # in case of disconnection
-        except socket.error:
+        except:
             print("Disconnected")
             try:
                 server_socket.close()

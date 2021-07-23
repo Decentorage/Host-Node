@@ -26,7 +26,7 @@ if l_ip != settings.local_ip:
     update_config_file()
 
 update_connection(settings.local_ip, str(settings.decentorage_port))
-#resume_old_connections()
+resume_old_connections()
 
 t1 = threading.Thread(target=listen_for_req)
 t2 = threading.Thread(target=heart_beat)
