@@ -45,6 +45,8 @@ def send_data(request, start):
         #print("Resume sending from ", resume_msg)
         # seek to the last point the user has received
         f.seek(resume_msg, 0)
+    else:
+        print("---------- Sending Data ----------")
 
     data = f.read(settings.chunk_size)
     server_socket.SNDTIMEO = 30000
@@ -159,7 +161,7 @@ def receive_data(request):
     # receive till end of shard or connection failed and unable to reconnect
     server_socket.RCVTIMEO = 30000
     server_socket.SNDTIMEO = 30000
-    print("---------- Starting receiving ----------")
+    print("---------- Receiving Data ----------")
     while True:
         try:
             frame = server_socket.recv()
