@@ -47,22 +47,18 @@ def send_data(request, start):
         f.seek(resume_msg, 0)
 
     data = f.read(settings.chunk_size)
-    server_socket.SNDTIMEO = 10000
-    server_socket.RCVTIMEO = 10000
+    server_socket.SNDTIMEO = 20000
+    server_socket.RCVTIMEO = 20000
     # send until the end of the file
     while data:
         try:
             # send data frame to user
-            print("0")
             data_frame = {"type": "data", "data": data}
-            print("1")
             data_frame = pickle.dumps(data_frame)
-            print("2")
             server_socket.send(data_frame)
             print("sent frame")
             # receive Ack from user
             ack_frame = server_socket.recv()
-            print("3")
             ack_frame = pickle.loads(ack_frame)
             print("Received frame ", ack_frame["type"])
             data = f.read(settings.chunk_size)
