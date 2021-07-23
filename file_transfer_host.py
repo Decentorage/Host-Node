@@ -53,17 +53,21 @@ def send_data(request, start):
     while data:
         try:
             # send data frame to user
+            print("0")
             data_frame = {"type": "data", "data": data}
+            print("1")
             data_frame = pickle.dumps(data_frame)
+            print("2")
             server_socket.send(data_frame)
-            print("sent frame ", data_frame["type"])
+            print("sent frame")
             # receive Ack from user
             ack_frame = server_socket.recv()
+            print("3")
             print("Received frame ", ack_frame["type"])
             data = f.read(settings.chunk_size)
 
         # in case of disconnection
-        except:
+        except socket.error:
             print("Disconnected")
             try:
                 server_socket.close()
@@ -72,7 +76,7 @@ def send_data(request, start):
                 server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
                 # time out 1 hour for reconnecting
                 server_socket.SNDTIMEO = 1000*60*60
-                server_socket.RCVTIMEO = 10000*60*60
+                server_socket.RCVTIMEO = 1000*60*60
                 # wait for user to reconnect
                 # if messaege delivered, reconnected to user
                 start_frame = {"type": "start"}
