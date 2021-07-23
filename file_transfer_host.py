@@ -63,6 +63,7 @@ def send_data(request, start):
             # receive Ack from user
             ack_frame = server_socket.recv()
             print("3")
+            ack_frame = pickle.loads(ack_frame)
             print("Received frame ", ack_frame["type"])
             data = f.read(settings.chunk_size)
 
