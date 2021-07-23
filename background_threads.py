@@ -20,7 +20,7 @@ def init_background_threads(s):
 
 # main thread waits for a request from decentorage node (audit/download/upload)
 def listen_for_req():
-    print("waiting for requests on port ", settings.decentorage_port)
+    print("---------- Listening for requests on port ", settings.decentorage_port, " ----------")
     server_socket = socket.socket()
     server_socket.bind((settings.local_ip, settings.decentorage_port))
     server_socket.listen(5)
@@ -28,7 +28,7 @@ def listen_for_req():
         connection, addr = server_socket.accept()
         request = connection.recv(1024).decode("utf-8")
         request = json.loads(request)
-        print(request)
+        print("---------- Received Request ", request["type"], " ----------")
         request_thread = threading.Thread(target=handle_request, args=(request,connection,))
         request_thread.start()
 

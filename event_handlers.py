@@ -29,14 +29,12 @@ def handle_request(request, connection=None):
         port = open_port(False)
 
         # add port to connections dictionary
-        print("OPENED PORT : ", port)
+        print("---------- OPENED PORT : ", port, " ----------")
         request['port'] = port
         try:
             connections = {}
-            print("waiit for semaphore")
             settings.semaphore.acquire()
 
-            print("got semaphore")
             with open('Cache/connections.txt') as json_file:
                 connections = json.load(json_file)
             connections['connections'].append(request)
@@ -77,7 +75,7 @@ def audit(salt, request):
 
 # if ip changes disable current port forwarding and create new port forwarding
 def local_ip_change(new_local_ip):
-    print("Local IP changed, Change port mappings on router")
+    print("----------- Local IP changed, Change port mappings on router ----------")
     # disable port forward on old ip for decentorage port
     upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
                                disable=True, protocol="TCP", duration=0, description=None, verbose=True)

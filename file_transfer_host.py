@@ -18,7 +18,7 @@ def init_file_transfer(s):
 def send_data(request, start):
     # file does not exist
     if not os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
-        print("shard does not exist")
+        print("Shard does not exist")
         return
 
     # create socket and wait for user to connect
@@ -30,19 +30,19 @@ def send_data(request, start):
     start_frame = {"type": "start"}
     start_frame = pickle.dumps(start_frame)
     server_socket.send(start_frame)
-    print("sent start frame")
+    #print("sent start frame")
 
     # Read file
     f = open(os.path.join(settings.data_directory, request['shard_id']), "rb")
     # if disconnected, resume sending
     if not start:
-        print("Resume")
+        print("---------- Resume Sending ----------")
         # get from receiver where it has stopped
         resume_frame = server_socket.recv()
         resume_frame = pickle.loads(resume_frame)
         resume_msg = resume_frame["data"]
         f.seek(resume_msg, 0)
-        print("Resume sending from ", resume_msg)
+        #print("Resume sending from ", resume_msg)
         # seek to the last point the user has received
         f.seek(resume_msg, 0)
 
@@ -56,11 +56,11 @@ def send_data(request, start):
             data_frame = {"type": "data", "data": data}
             data_frame = pickle.dumps(data_frame)
             server_socket.send(data_frame)
-            print("sent frame")
+            #print("sent frame")
             # receive Ack from user
             ack_frame = server_socket.recv()
             ack_frame = pickle.loads(ack_frame)
-            print("Received frame ", ack_frame["type"])
+            #print("Received frame ", ack_frame["type"])
             data = f.read(settings.chunk_size)
 
         # in case of disconnection
@@ -76,6 +76,7 @@ def send_data(request, start):
                 server_socket.RCVTIMEO = 1000*60*60
                 # wait for user to reconnect
                 # if messaege delivered, reconnected to user
+                print("Trying to reconnect ......")
                 start_frame = {"type": "start"}
                 start_frame = pickle.dumps(start_frame)
                 server_socket.send(start_frame)
@@ -85,29 +86,29 @@ def send_data(request, start):
                 resume_frame = server_socket.recv()
                 resume_frame = pickle.loads(resume_frame)
                 resume_msg = resume_frame["data"]
-                print(resume_msg)
+                #print(resume_msg)
                 f.seek(resume_msg, 0)
-                print("Resume sending from ", resume_msg)
+                print("Resume sending data")
                 # seek to the last point the user has received
 
-                server_socket.SNDTIMEO = 10000
-                server_socket.RCVTIMEO = 10000
+                server_socket.SNDTIMEO = 30000
+                server_socket.RCVTIMEO = 30000
                 f.seek(resume_msg, 0)
                 data = f.read(settings.chunk_size)
 
             except:
-                print("Unable to reconnect, terminating connection")
+                print("Unable to reconnect, Terminating connection")
                 break
 
-    print("sending end frame")
+    #print("sending end frame")
     end_frame = {"type": "END"}
     end_frame = pickle.dumps(end_frame)
     server_socket.send(end_frame)
-    print("sent end frame")
+    #print("sent end frame")
     # terminate connection after complete transmission
     f.close()
     server_socket.close()
-    print("CLOSE PORT : ", request['port'])
+    print("---------- CLOSE PORT : ", request['port'], " ----------")
     # TODO CLOSE OPEN PORT AT ROUTER
 
     # remove from text file
@@ -120,7 +121,7 @@ def send_data(request, start):
     with open('Cache/connections.txt', 'w') as outfile:
         json.dump(connections, outfile)
     settings.semaphore.release()
-    print("Done sending...")
+    print("---------- Done Sending ----------")
 
 
 def receive_data(request):
@@ -135,9 +136,9 @@ def receive_data(request):
 
     start_frame = {"type": "start"}
     start_frame = pickle.dumps(start_frame)
-    print("sending start frame")
+    #print("sending start frame")
     server_socket.send(start_frame)
-    print("start frame sent")
+    #print("start frame sent")
 
     connected = True
     f = None
@@ -150,20 +151,20 @@ def receive_data(request):
         resume_frame = pickle.dumps(resume_frame)
         server_socket.send(resume_frame)
         f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
-        print(f.tell())
+        #print(f.tell())
 
     # if file does not exist, start upload
     # else:
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
     # receive till end of shard or connection failed and unable to reconnect
-    server_socket.RCVTIMEO = 10000
-    server_socket.SNDTIMEO = 10000
-    print("starting receiving data")
+    server_socket.RCVTIMEO = 30000
+    server_socket.SNDTIMEO = 30000
+    print("---------- Starting receiving ----------")
     while True:
         try:
             frame = server_socket.recv()
             frame = pickle.loads(frame)
-            print("received frame of type ", frame["type"])
+            #print("received frame of type ", frame["type"])
             if frame["type"] == "data":
                 ack_frame = {"type": "ACK"}
                 ack_frame = pickle.dumps(ack_frame)
@@ -178,7 +179,7 @@ def receive_data(request):
         # disconnected
         except:
             # set connection status and recreate socket
-            print("connection lost.")
+            print("Disconnected")
             # try to reconnect
             try:
                 server_socket.close()
@@ -187,6 +188,7 @@ def receive_data(request):
                 server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
                 # time out 1 hour for reconnecting
                 server_socket.SNDTIMEO = 1000*60*60
+                print("Trying to reconnect ......")
 
 
                 # if messaege delivered, reconnected to user
@@ -194,8 +196,8 @@ def receive_data(request):
                 start_frame = pickle.dumps(start_frame)
 
                 server_socket.send(start_frame)
-                print("re-connection successful")
-                server_socket.SNDTIMEO = 1000
+                print("Reconnected successfully")
+                server_socket.SNDTIMEO = 30000
 
                 f.close()
                 # on reconnect, inform user where it has stopped
@@ -203,15 +205,16 @@ def receive_data(request):
                 resume_frame = {"type": "resume", "data": file_size}
                 resume_frame = pickle.dumps(resume_frame)
                 server_socket.send(resume_frame)
-                print("sent resume frame")
+                print("Resume receiving data")
+                #print("sent resume frame")
                 f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
             except socket.error:
-                print("Unable to reconnect, closing connection")
+                print("Unable to reconnect, Terminating connection")
                 break
 
     f.close()
     server_socket.close()
-    print("CLOSE PORT : ", request['port'])
+    print("----------- CLOSE PORT : ", request['port'], " ----------")
     done_uploading(request["shard_id"])
     # TODO CLOSE PORT OPENED ON ROUTER
 
@@ -225,4 +228,5 @@ def receive_data(request):
     with open('Cache/connections.txt', 'w') as outfile:
         json.dump(connections, outfile)
     settings.semaphore.release()
+    print("---------- Done Receiving ----------")
 
