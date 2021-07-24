@@ -200,6 +200,7 @@ def receive_data(request):
                 server_socket.send(start_frame)
                 print("Reconnected successfully")
                 server_socket.SNDTIMEO = settings.chunk_timeout
+                server_socket.RCVTIMEO = settings.chunk_timeout
 
                 f.close()
                 # on reconnect, inform user where it has stopped

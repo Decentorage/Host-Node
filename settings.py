@@ -8,11 +8,11 @@ class Settings:
         self.data_directory = "Data"
         self.cache_directory = "Cache"
         self.local = True
-        self.chunk_size = 10*(2**20)
+        self.chunk_size = (2**10)
         self.public_ip = ""
         self.local_ip = ""
         self.token = ""
         self.decentorage_port = 0
-        self.chunk_timeout = 30000
+        self.chunk_timeout = 2000
         self.disconnected_timeout = 60*60*1000
         self.semaphore = threading.Semaphore()
