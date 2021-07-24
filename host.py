@@ -16,16 +16,13 @@ init_api_requests(settings)
 init_event_handlers(settings)
 init_file_transfer(settings)
 
-init_app()
-app_startup_msg()
-login_prompt()
-read_config_file()
-l_ip = upnp.get_my_ip()
-if l_ip != settings.local_ip:
-    local_ip_change(l_ip)
-    update_config_file()
+app_startup_msg()               # print startup message
+init_app()                      # create directories and files if not exist and read public ip if not local mode
+login_prompt()                  # login and save token
+read_config_file()              # load IP and port
+track_ip(True)                  # check that IP read from file is same as current IP
 
-update_connection(settings.local_ip, str(settings.decentorage_port))
+update_connection(settings.public_ip, str(settings.decentorage_port))
 resume_old_connections()
 
 t1 = threading.Thread(target=listen_for_req)

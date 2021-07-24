@@ -49,8 +49,8 @@ def send_data(request, start):
         print("---------- Sending Data ----------")
 
     data = f.read(settings.chunk_size)
-    server_socket.SNDTIMEO = 30000
-    server_socket.RCVTIMEO = 30000
+    server_socket.SNDTIMEO = settings.chunk_timeout
+    server_socket.RCVTIMEO = settings.chunk_timeout
     # send until the end of the file
     while data:
         try:
@@ -74,8 +74,8 @@ def send_data(request, start):
                 server_socket = context.socket(zmq.PAIR)
                 server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
                 # time out 1 hour for reconnecting
-                server_socket.SNDTIMEO = 1000*60*60
-                server_socket.RCVTIMEO = 1000*60*60
+                server_socket.SNDTIMEO = settings.disconnected_timeout
+                server_socket.RCVTIMEO = settings.disconnected_timeout
                 # wait for user to reconnect
                 # if messaege delivered, reconnected to user
                 print("Trying to reconnect ......")
@@ -93,8 +93,8 @@ def send_data(request, start):
                 print("Resume sending data")
                 # seek to the last point the user has received
 
-                server_socket.SNDTIMEO = 30000
-                server_socket.RCVTIMEO = 30000
+                server_socket.SNDTIMEO = settings.chunk_timeout
+                server_socket.RCVTIMEO = settings.chunk_timeout
                 f.seek(resume_msg, 0)
                 data = f.read(settings.chunk_size)
 
@@ -159,8 +159,8 @@ def receive_data(request):
     # else:
     f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
     # receive till end of shard or connection failed and unable to reconnect
-    server_socket.RCVTIMEO = 30000
-    server_socket.SNDTIMEO = 30000
+    server_socket.RCVTIMEO = settings.chunk_timeout
+    server_socket.SNDTIMEO = settings.chunk_timeout
     print("---------- Receiving Data ----------")
     while True:
         try:
@@ -189,7 +189,7 @@ def receive_data(request):
                 server_socket = context.socket(zmq.PAIR)
                 server_socket.bind("tcp://" + settings.local_ip + ":" + str(request['port']))
                 # time out 1 hour for reconnecting
-                server_socket.SNDTIMEO = 1000*60*60
+                server_socket.SNDTIMEO = settings.disconnected_timeout
                 print("Trying to reconnect ......")
 
 
@@ -199,7 +199,7 @@ def receive_data(request):
 
                 server_socket.send(start_frame)
                 print("Reconnected successfully")
-                server_socket.SNDTIMEO = 30000
+                server_socket.SNDTIMEO = settings.chunk_timeout
 
                 f.close()
                 # on reconnect, inform user where it has stopped

@@ -38,8 +38,10 @@ def is_port_in_use(port):
         used = True
         socket.close()
 
-    return used
-    #return (used or upnp.is_port_open(port))
+    if settings.local:
+        return used
+    else:
+        return used or upnp.is_port_open(port)
 
 
 # pick a random port and check that it is not in use
@@ -47,6 +49,7 @@ def open_port(decentorage=False):
     opened = False
     port = 0
     while not opened:
+        # if decentorage open port 50000 by default, if already in use, find another port
         if decentorage:
             port = 50000
             if not is_port_in_use(port):
@@ -57,12 +60,15 @@ def open_port(decentorage=False):
                 port = port + 1
 
         else:
-            port = random.randint(50005, 60000)
+            port = random.randint(50100, 60000)
             if not is_port_in_use(port):
                 opened = True
 
-        '''            upnp.forwardPort(port, port, router=None, lanip=local_ip,
-                                               disable=False, protocol="TCP", time=0, description=None, verbose=True)'''
+    # if not running local open port in the router
+    if not settings.local:
+        upnp.forward_port(port, port, router=None, lanip=settings.local_ip,
+                         disable=False, protocol="TCP", duration=0, description=None, verbose=False)
+
     return port
 
 
@@ -83,26 +89,38 @@ def update_config_file():
         f.write(str(settings.decentorage_port))
 
 
+# create directories and files needed by the app if
 def init_app():
+    # Create data directory to store downloaded data shards
     if not os.path.isdir("Data"):
         os.makedirs("Data")
 
+    # create cache directory to store app configuration and active connections
     if not os.path.isdir("Cache"):
         os.makedirs("Cache")
         connections = {}
         connections['connections'] = []
+
+        # create file for active connections and initialize it with empty array of connections
         with open('Cache/connections.txt', 'w') as outfile:
             json.dump(connections, outfile)
 
+        # create file to store authentication token
         with open('Cache/auth.txt', 'w'):
             pass
 
+        # store the current local ip in a variable
         settings.local_ip = upnp.get_my_ip()
+
+        # open port for decentorage to send messages on and save it in a variable
         settings.decentorage_port = open_port(True)
+
         # save local ip and decentorage port to config file
         update_config_file()
 
-    try:
-        settings.public_ip = get_public_ip()
-    except:
-        print("Check your internet connection")
+    if not settings.local:
+        try:
+            # get public ip and store it
+            settings.public_ip = get_public_ip()
+        except:
+            print("Check your internet connection")

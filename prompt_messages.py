@@ -17,7 +17,7 @@ def login_prompt():
 
 # prompt message on app startup
 def app_startup_msg():
-    text = "D E C E N T O R A G E"
+    text = "DECENTORAGE"
     my_font = ImageFont.load_default()
     size = my_font.getsize(text)
     img = Image.new("1", size, "black")

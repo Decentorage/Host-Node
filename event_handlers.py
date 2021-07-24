@@ -56,7 +56,7 @@ def handle_request(request, connection=None):
 
 # sends message to decentorage node to notify public ip change
 def public_ip_change():
-    api_requests.update_connection()
+    api_requests.update_connection(settings.public_ip, settings.decentorage_port)
 
 
 # on audit hash the file concatenated with the received salt
@@ -75,26 +75,28 @@ def audit(salt, request):
 
 # if ip changes disable current port forwarding and create new port forwarding
 def local_ip_change(new_local_ip):
-    print("----------- Local IP changed, Change port mappings on router ----------")
-    # disable port forward on old ip for decentorage port
-    upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
-                               disable=True, protocol="TCP", duration=0, description=None, verbose=True)
-    # port forward on new ip for decentorage port
-    upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
-                               disable=False, protocol="TCP", duration=0, description=None, verbose=True)
-
-
-    settings.semaphore.acquire()
-    with open('Cache/connections.txt') as json_file:
-        connections = json.load(json_file)
-    settings.semaphore.release()
-
-    for i in range(len(connections['connections'])):
-        # disable port forward on old ip for open ports with clients
-        upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=settings.local_ip,
-                                   disable=True, protocol="TCP", duration=0, description=None, verbose=True)
-        # port forward on new ip for open ports with clients
-        upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=new_local_ip,
+    # if not running locally
+    if not settings.local:
+        print("----------- Local IP changed, Change port mappings on router ----------")
+        # disable port forward on old ip for decentorage port
+        #upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
+        #                           disable=True, protocol="TCP", duration=0, description=None, verbose=True)
+        # port forward on new ip for decentorage port
+        upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
                                    disable=False, protocol="TCP", duration=0, description=None, verbose=True)
+
+
+        settings.semaphore.acquire()
+        with open('Cache/connections.txt') as json_file:
+            connections = json.load(json_file)
+        settings.semaphore.release()
+
+        for i in range(len(connections['connections'])):
+            # disable port forward on old ip for open ports with clients
+            #upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=settings.local_ip,
+            #                           disable=True, protocol="TCP", duration=0, description=None, verbose=True)
+            # port forward on new ip for open ports with clients
+            upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=new_local_ip,
+                                       disable=False, protocol="TCP", duration=0, description=None, verbose=True)
 
     settings.local_ip = new_local_ip

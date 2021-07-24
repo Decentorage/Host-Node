@@ -41,19 +41,28 @@ def heart_beat():
 
 
 # thread to track changes in ip
-def track_ip():
+def track_ip(start=False):
     while True:
-        p_ip = get_public_ip()
-        if p_ip != settings.public_ip:
-            settings.public_ip = p_ip
-            public_ip_change()
+        # if not local mode get public IP
+        if not settings.local:
+            p_ip = get_public_ip()
+            if p_ip != settings.public_ip:
+                settings.public_ip = p_ip
+                public_ip_change()
 
         l_ip = upnp.get_my_ip()
         if l_ip != settings.local_ip:
             local_ip_change(l_ip)
             update_config_file()
 
-        sleep(10)
+        # if local mode, public IP = local IP
+        if settings.local:
+            settings.public_ip = settings.local_ip
+
+        if start:
+            break
+        else:
+            sleep(10)
 
 
 # thread that is scheduled every 12 hours to request withdraw
