@@ -248,7 +248,7 @@ def forward_port(eport, iport, router, lanip, disable, protocol, duration, descr
             if verbose:
                 print(("%sport forward on %s successful, %s->%s:%s"%(dis,routerip, eport,localip,iport)))
         else:
-            sys.stderr.write("%sport forward on %s failed, status=%s message=%s\n"%(dis,routerip,status,message))
+            #sys.stderr.write("%sport forward on %s failed, status=%s message=%s\n"%(dis,routerip,status,message))
             success = False
 
 

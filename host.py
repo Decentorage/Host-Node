@@ -3,7 +3,7 @@ import threading
 
 from prompt_messages import app_startup_msg, login_prompt, resume_old_connections
 from background_threads import *
-from utils import read_config_file, init_utils, init_app
+from utils import read_config_file, init_utils, init_app, check_decentorage_port
 from settings import Settings
 from api_requests import init_api_requests, update_connection
 from event_handlers import init_event_handlers
@@ -21,6 +21,7 @@ init_app()                      # create directories and files if not exist and 
 login_prompt()                  # login and save token
 read_config_file()              # load IP and port
 track_ip(True)                  # check that IP read from file is same as current IP
+check_decentorage_port()
 
 update_connection(settings.public_ip, str(settings.decentorage_port))
 resume_old_connections()

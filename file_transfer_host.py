@@ -121,8 +121,9 @@ def send_data(request, start):
     print("---------- CLOSE PORT : ", request['port'], " ----------")
 
     # close port at router
-    upnp.forward_port(request['port'], request['port'], router=None, lanip=None,
-                      disable=True, protocol="TCP", duration=0, description=None, verbose=False)
+    if not settings.local:
+        upnp.forward_port(request['port'], request['port'], router=None, lanip=None,
+                          disable=True, protocol="TCP", duration=0, description=None, verbose=False)
 
     # remove from text file
     # use semaphore on file to make sure it is not used by another thread
@@ -237,8 +238,9 @@ def receive_data(request):
     print("---------- CLOSE PORT : ", request['port'], " ----------")
 
     # Close port at router
-    upnp.forward_port(request['port'], request['port'], router=None, lanip=None,
-                      disable=True, protocol="TCP", duration=0, description=None, verbose=False)
+    if not settings.local:
+        upnp.forward_port(request['port'], request['port'], router=None, lanip=None,
+                          disable=True, protocol="TCP", duration=0, description=None, verbose=False)
 
     # remove from text file
     # use semaphore on file to make sure it is not used by another thread

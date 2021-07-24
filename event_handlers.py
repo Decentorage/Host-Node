@@ -17,7 +17,7 @@ def init_event_handlers(s):
 # thread to handle requests
 def handle_request(request, connection=None):
     if request['type'] == 'audit':
-        res = audit(request, connection)
+        res = audit(request)
         connection.send(bytes(res, "UTF-8"))
         return
 
@@ -60,17 +60,16 @@ def public_ip_change():
 
 
 # on audit hash the file concatenated with the received salt
-def audit(salt, request):
-    sha256_hash = hashlib.sha256()
-    buffer_size = 65536  # read data in 64kb chunks
-    with open(os.path.join(settings.data_directory, request['shard_id']), "rb") as fn:
-        # Read and update hash string value in blocks of 4K
-        for byte_block in iter(lambda: fn.read(buffer_size), b""):
-            sha256_hash.update(byte_block)
-        #print(sha256_hash.hexdigest())
-        sha256_hash.update(salt.encode())
-        return sha256_hash.hexdigest()
-        # TODO send audit result to decentorage
+def audit(request):
+    file = os.path.join(settings.data_directory, request["shard_id"])
+    with open(file, "rb") as file:
+        file_hash = hashlib.md5()
+        file_content = file.read()
+        file_hash.update(file_content)
+
+        file_hash.update(request["salt"].encode())
+        # append to audits list
+    return file_hash.hexdigest()
 
 
 # if ip changes disable current port forwarding and create new port forwarding
