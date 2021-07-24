@@ -3,6 +3,7 @@ from time import sleep
 import os
 import threading
 import json
+import upnp
 import zmq
 import pickle
 from api_requests import done_uploading
@@ -51,6 +52,8 @@ def send_data(request, start):
     data = f.read(settings.chunk_size)
     server_socket.SNDTIMEO = settings.chunk_timeout
     server_socket.RCVTIMEO = settings.chunk_timeout
+    success = True
+
     # send until the end of the file
     while data:
         try:
@@ -59,6 +62,7 @@ def send_data(request, start):
             data_frame = pickle.dumps(data_frame)
             server_socket.send(data_frame)
             #print("sent frame")
+
             # receive Ack from user
             ack_frame = server_socket.recv()
             ack_frame = pickle.loads(ack_frame)
@@ -99,19 +103,26 @@ def send_data(request, start):
                 data = f.read(settings.chunk_size)
 
             except:
+                success = False
                 print("Unable to reconnect, Terminating connection")
                 break
 
     #print("sending end frame")
-    end_frame = {"type": "END"}
-    end_frame = pickle.dumps(end_frame)
-    server_socket.send(end_frame)
+    if success:
+        end_frame = {"type": "END"}
+        end_frame = pickle.dumps(end_frame)
+        server_socket.send(end_frame)
+        print("---------- Done Sending ----------")
+
     #print("sent end frame")
     # terminate connection after complete transmission
     f.close()
     server_socket.close()
     print("---------- CLOSE PORT : ", request['port'], " ----------")
-    # TODO CLOSE OPEN PORT AT ROUTER
+
+    # close port at router
+    upnp.forward_port(request['port'], request['port'], router=None, lanip=None,
+                      disable=True, protocol="TCP", duration=0, description=None, verbose=False)
 
     # remove from text file
     # use semaphore on file to make sure it is not used by another thread
@@ -123,7 +134,6 @@ def send_data(request, start):
     with open('Cache/connections.txt', 'w') as outfile:
         json.dump(connections, outfile)
     settings.semaphore.release()
-    print("---------- Done Sending ----------")
 
 
 def receive_data(request):
@@ -146,7 +156,6 @@ def receive_data(request):
     f = None
 
     # if file exists, resume upload, open in append mode, inform sender where it has stopped
-    # TODO resume sending
     if os.path.isfile(os.path.join(settings.data_directory, request['shard_id'])):
         resume_msg = os.path.getsize(os.path.join(settings.data_directory, request['shard_id']))
         resume_frame = {"type": "resume", "data": resume_msg}
@@ -156,11 +165,13 @@ def receive_data(request):
         #print(f.tell())
 
     # if file does not exist, start upload
-    # else:
-    f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
+    else:
+        f = open(os.path.join(settings.data_directory, request['shard_id']), "wb")
+
     # receive till end of shard or connection failed and unable to reconnect
     server_socket.RCVTIMEO = settings.chunk_timeout
     server_socket.SNDTIMEO = settings.chunk_timeout
+    success = True
     print("---------- Receiving Data ----------")
     while True:
         try:
@@ -213,13 +224,21 @@ def receive_data(request):
                 f = open(os.path.join(settings.data_directory, request['shard_id']), "ab")
             except socket.error:
                 print("Unable to reconnect, Terminating connection")
+                success = False
                 break
 
     f.close()
     server_socket.close()
-    print("----------- CLOSE PORT : ", request['port'], " ----------")
-    done_uploading(request["shard_id"])
-    # TODO CLOSE PORT OPENED ON ROUTER
+
+    if success:
+        print("---------- Done Receiving ----------")
+        done_uploading(request["shard_id"])
+
+    print("---------- CLOSE PORT : ", request['port'], " ----------")
+
+    # Close port at router
+    upnp.forward_port(request['port'], request['port'], router=None, lanip=None,
+                      disable=True, protocol="TCP", duration=0, description=None, verbose=False)
 
     # remove from text file
     # use semaphore on file to make sure it is not used by another thread
@@ -231,5 +250,4 @@ def receive_data(request):
     with open('Cache/connections.txt', 'w') as outfile:
         json.dump(connections, outfile)
     settings.semaphore.release()
-    print("---------- Done Receiving ----------")
 

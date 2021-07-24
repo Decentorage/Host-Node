@@ -66,7 +66,7 @@ def open_port(decentorage=False):
 
     # if not running local open port in the router
     if not settings.local:
-        upnp.forward_port(port, port, router=None, lanip=settings.local_ip,
+        upnp.forward_port(port, port, router=None, lanip=None,
                          disable=False, protocol="TCP", duration=0, description=None, verbose=False)
 
     return port
@@ -124,3 +124,27 @@ def init_app():
             settings.public_ip = get_public_ip()
         except:
             print("Check your internet connection")
+
+
+def check_decentorage_port():
+    used = is_used()
+    if used:
+        open_port(True)
+    else:
+        if not settings.local:
+            upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=None,
+                              disable=False, protocol="TCP", duration=0, description=None, verbose=False)
+
+
+def is_used():
+    used = False
+    try:
+        context = zmq.Context()
+        socket = context.socket(zmq.PAIR)
+        socket.bind("tcp://127.0.0.1:" + str(settings.decentorage_port))
+        socket.close()
+    except:
+        used = True
+        socket.close()
+
+    return used
