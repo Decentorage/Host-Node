@@ -37,7 +37,7 @@ def listen_for_req():
 def heart_beat():
     while True:
         api_requests.send_heart_beat()
-        sleep(10*60)
+        sleep(5*60)
 
 
 # thread to track changes in ip
