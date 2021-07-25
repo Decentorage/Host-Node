@@ -16,6 +16,11 @@ def init_event_handlers(s):
 
 # thread to handle requests
 def handle_request(request, connection=None):
+    if request['type'] == 'audit':
+        res = audit(request)
+        connection.send(bytes(res, "UTF-8"))
+        return
+
     # request from decentorage
     start = False
     if request['port'] == 0:
@@ -24,14 +29,12 @@ def handle_request(request, connection=None):
         port = open_port(False)
 
         # add port to connections dictionary
-        print("OPENED PORT : ", port)
+        print("---------- OPENED PORT : ", port, " ----------")
         request['port'] = port
         try:
             connections = {}
-            print("waiit for semaphore")
             settings.semaphore.acquire()
 
-            print("got semaphore")
             with open('Cache/connections.txt') as json_file:
                 connections = json.load(json_file)
             connections['connections'].append(request)
@@ -49,49 +52,50 @@ def handle_request(request, connection=None):
         receive_data(request)
     elif request['type'] == 'download':
         send_data(request, start)
-    elif request['type'] == 'audit':
-        audit(request)
 
 
 # sends message to decentorage node to notify public ip change
 def public_ip_change():
-    api_requests.update_connection()
+    api_requests.update_connection(settings.public_ip, settings.decentorage_port)
 
 
 # on audit hash the file concatenated with the received salt
-def audit(salt, request):
-    sha256_hash = hashlib.sha256()
-    buffer_size = 65536  # read data in 64kb chunks
-    with open(os.path.join(settings.data_directory, request['shard_id']), "rb") as fn:
-        # Read and update hash string value in blocks of 4K
-        for byte_block in iter(lambda: fn.read(buffer_size), b""):
-            sha256_hash.update(byte_block)
-        print(sha256_hash.hexdigest())
-        sha256_hash.update(salt.encode())
-        print(sha256_hash.hexdigest())
-        # TODO send audit result to decentorage
+def audit(request):
+    file = os.path.join(settings.data_directory, request["shard_id"])
+    with open(file, "rb") as file:
+        file_hash = hashlib.md5()
+        file_content = file.read()
+        file_hash.update(file_content)
+
+        file_hash.update(request["salt"].encode())
+        # append to audits list
+    return file_hash.hexdigest()
 
 
 # if ip changes disable current port forwarding and create new port forwarding
 def local_ip_change(new_local_ip):
-    print("Local IP changed, Change port mappings on router")
-    # disable port forward on old ip for decentorage port
-    upnp.forwardPort(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
-                               disable=True, protocol="TCP", duration=0, description=None, verbose=True)
-    # port forward on new ip for decentorage port
-    upnp.forwardPort(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
-                               disable=False, protocol="TCP", duration=0, description=None, verbose=True)
-
-
-    settings.semaphore.acquire()
-    with open('Cache/connections.txt') as json_file:
-        connections = json.load(json_file)
-    settings.semaphore.release()
-
-    for i in range(len(connections['connections'])):
-        # disable port forward on old ip for open ports with clients
-        upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=settings.local_ip,
-                                   disable=True, protocol="TCP", duration=0, description=None, verbose=True)
-        # port forward on new ip for open ports with clients
-        upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=new_local_ip,
+    # if not running locally
+    if not settings.local:
+        print("----------- Local IP changed, Change port mappings on router ----------")
+        # disable port forward on old ip for decentorage port
+        #upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=settings.local_ip,
+        #                           disable=True, protocol="TCP", duration=0, description=None, verbose=True)
+        # port forward on new ip for decentorage port
+        upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=new_local_ip,
                                    disable=False, protocol="TCP", duration=0, description=None, verbose=True)
+
+
+        settings.semaphore.acquire()
+        with open('Cache/connections.txt') as json_file:
+            connections = json.load(json_file)
+        settings.semaphore.release()
+
+        for i in range(len(connections['connections'])):
+            # disable port forward on old ip for open ports with clients
+            #upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=settings.local_ip,
+            #                           disable=True, protocol="TCP", duration=0, description=None, verbose=True)
+            # port forward on new ip for open ports with clients
+            upnp.forwardPort(connections['connections'][i]['port'], connections['connections'][i]['port'], router=None, lanip=new_local_ip,
+                                       disable=False, protocol="TCP", duration=0, description=None, verbose=True)
+
+    settings.local_ip = new_local_ip

@@ -22,18 +22,20 @@ def discover():
     WAIT = 1
 
     # Request sent to router to get list of routers with enabled UPnP
-    ssdpRequest = "M-SEARCH * HTTP/1.1\r\n" + \
-                    "HOST: %s:%d\r\n" % (SSDP_ADDR, SSDP_PORT) + \
-                    "MAN: \"ssdp:discover\"\r\n" + \
-                    "MX: %d\r\n" % (SSDP_MX, ) + \
-                    "ST: %s\r\n" % (SSDP_ST, ) + "\r\n"
+    ssdpRequest =  \
+    'M-SEARCH * HTTP/1.1\r\n' \
+    'HOST:239.255.255.250:1900\r\n' \
+    'ST:upnp:rootdevice\r\n' \
+    'MX:2\r\n' \
+    'MAN:"ssdp:discover"\r\n' \
+    '\r\n'
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setblocking(0)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.sendto(ssdpRequest.encode(), (SSDP_ADDR, SSDP_PORT))
-    time.sleep(WAIT)
+    sock.settimeout(0.1)
+
     paths = []
-    for _ in range(10):
+    while True:
         try:
             data, fromaddr = sock.recvfrom(1024)
 
@@ -45,9 +47,9 @@ def discover():
             # use the urlparse function to create an easy to use object to hold a URL
             router_path = location[0][1]
             paths.append(router_path)
+            break
 
         except socket.error:
-            '''no data yet'''
             break
 
     return paths
@@ -60,14 +62,14 @@ def get_wanip_path(upnp_url):
     #print("directory ", directory)
     # create a DOM object that represents the `directory` document
     dom = parseString(directory)
-    print("dom ", dom)
+    #print("dom ", dom)
     # find all 'serviceType' elements
     service_types = dom.getElementsByTagName('serviceType')
-    print("service types ", service_types)
+    #print("service types ", service_types)
     # iterate over service_types until we get either WANIPConnection or WANPPPConnection
     # service_type depend on router
     for service in service_types:
-        print(service.childNodes[0].data)
+        #print(service.childNodes[0].data)
         # return the service and it's path
         if (service.childNodes[0].data.find('WANIPConnection') > 0 ) or (service.childNodes[0].data.find('WANPPPConnection') > 0):
             path = service.parentNode.getElementsByTagName('controlURL')[0].childNodes[0].data
@@ -154,11 +156,11 @@ def open_port(action, service, service_url, external_port, internal_client, inte
 
     # our tree is ready, conver it to a string
     pure_xml = doc.toxml()
-    print("pure xml ", pure_xml)
+    #print("pure xml ", pure_xml)
     # use the object returned by urlparse.urlparse to get the hostname and port
 
-    print("parsedurl.hostname :", parsedurl.hostname)
-    print("parsedurl.port :", parsedurl.port)
+    #print("parsedurl.hostname :", parsedurl.hostname)
+    #print("parsedurl.port :", parsedurl.port)
     conn = http.client.HTTPConnection(parsedurl.hostname, parsedurl.port)
 
     # use the path of WANIPConnection or WANPPPConnection to target that service,
@@ -201,33 +203,34 @@ def forward_port(eport, iport, router, lanip, disable, protocol, duration, descr
 
     # discover UPnP enabled routers till find a router or timeout
     # SSDP uses UDP, send request multiple times to make sure packet is not lost
-    res = discover()
-    timeout = time.time() + 20
-    while len(res) == 0 and time.time() < timeout:
-        res = discover()
+    #res = discover()
+    #timeout = time.time() + 5
+    #while len(res) == 0 and time.time() < timeout:
+    #   res = discover()
 
-    print(res)
+    #print(res)
+    res = ['http://192.168.1.1:37215/upnpdev.xml']
 
     success = False
     for path in res:
         discparsed = urlparse(path)
         service_path, service = get_wanip_path(path)
-        print("discparsed.scheme ", discparsed.scheme)
-        print("discparsed.netloc ", discparsed.netloc)
-        print("service_path ", service_path)
+        #print("discparsed.scheme ", discparsed.scheme)
+        #print("discparsed.netloc ", discparsed.netloc)
+        #print("service_path ", service_path)
         service_url = "%s://%s%s"%(discparsed.scheme, discparsed.netloc, service_path)
         routerip = discparsed.netloc.split(':')[0]
-        print(routerip)
+        #print(routerip)
         # for multiple routers case
         if router !=None and routerip not in router:
-            print("continue")
+            #print("continue")
             continue
 
         localip = lanip
         if lanip == None:
             localip = get_my_ip(routerip)
-            print("router ip", routerip)
-            print("localip ", localip )
+            #print("router ip", routerip)
+            #print("localip ", localip )
         enabled = int(not disable)
 
         dis=''
@@ -245,7 +248,7 @@ def forward_port(eport, iport, router, lanip, disable, protocol, duration, descr
             if verbose:
                 print(("%sport forward on %s successful, %s->%s:%s"%(dis,routerip, eport,localip,iport)))
         else:
-            sys.stderr.write("%sport forward on %s failed, status=%s message=%s\n"%(dis,routerip,status,message))
+            #sys.stderr.write("%sport forward on %s failed, status=%s message=%s\n"%(dis,routerip,status,message))
             success = False
 
 
@@ -253,13 +256,15 @@ def forward_port(eport, iport, router, lanip, disable, protocol, duration, descr
 
 
 # check router table of port mapping to se if port already used
-def is_port_open(eport, iport, router, lanip, disable, protocol, duration, description, verbose):
+def is_port_open(eport, iport=None, router=None, lanip=None, disable=None, protocol="TCP", duration=None, description=None, verbose=None):
     # discover UPnP enabled routers till find a router or timeout
     # SSDP uses UDP, send request multiple times to make sure packet is not lost
-    res = discover()
-    timeout = time.time() + 20
-    while len(res) == 0 and time.time() < timeout:
-        res = discover()
+    #res = discover()
+    #timeout = time.time() + 5
+    #while len(res) == 0 and time.time() < timeout:
+    #    res = discover()
+
+    res = ['http://192.168.1.1:37215/upnpdev.xml']
 
     opened = False
     for path in res:
@@ -270,7 +275,7 @@ def is_port_open(eport, iport, router, lanip, disable, protocol, duration, descr
 
         # for multiple routers
         if router !=None and routerip not in router:
-            print("continue")
+            #print("continue")
             continue
 
         localip = lanip

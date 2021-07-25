@@ -35,7 +35,7 @@ def app_startup_msg():
 def resume_old_connections():
     try:
         connections = {}
-        with open('connections.txt') as json_file:
+        with open('Cache/connections.txt') as json_file:
             connections = json.load(json_file)
 
         for i in range(len(connections['connections'])):
