@@ -61,5 +61,7 @@ def get_active_contracts():
     success = False
     if res.status_code == 200:
         success = True
-
-    return res.json()["shards"], success
+    if success:
+        return res.json()["shards"], True
+    else:
+        return [], False

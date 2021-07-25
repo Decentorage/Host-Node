@@ -1,8 +1,14 @@
 certifi==2021.5.30
 charset-normalizer==2.0.3
+click==8.0.1
 idna==3.2
+importlib-metadata==4.6.1
 numpy==1.19.5
 Pillow==8.3.1
 psutil==5.8.0
+pyzmq==22.1.0
 requests==2.26.0
+typing-extensions==3.10.0.0
 urllib3==1.26.6
+zipp==3.5.0
+zmq==0.0.0

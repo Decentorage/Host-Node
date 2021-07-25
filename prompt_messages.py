@@ -4,15 +4,21 @@ import numpy as np
 import json
 import threading
 from event_handlers import handle_request
-
+import sys
 
 # login message on app startup if no token saved
-def login_prompt():
-    logged_in = False
-    while not logged_in:
-        username = input("Username: ")
-        password = input("Password: ")
+def login_prompt(username, password):
+    if username and password:
         logged_in = api_requests.login(username, password)
+        if not logged_in:
+            print("Invalid username or password.")
+            sys.exit(-1)
+    else:
+        logged_in = False
+        while not logged_in:
+            username = input("Username: ")
+            password = input("Password: ")
+            logged_in = api_requests.login(username, password)
 
 
 # prompt message on app startup
