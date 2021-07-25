@@ -41,20 +41,19 @@ def is_port_in_use(port):
     if settings.local:
         return used
     else:
-        return used or upnp.is_port_open(port)
+        ret = used or upnp.is_port_open(port)
+        return ret
 
 
 # pick a random port and check that it is not in use
 def open_port(decentorage=False):
     opened = False
-    port = 0
+    port = 50000
     while not opened:
         # if decentorage open port 50000 by default, if already in use, find another port
         if decentorage:
-            port = 50000
             if not is_port_in_use(port):
                 opened = True
-                settings.decentorage_port
                 settings.decentorage_port = port
             else:
                 port = port + 1
