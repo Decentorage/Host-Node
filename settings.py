@@ -8,6 +8,7 @@ class Settings:
         self.data_directory = "Data"
         self.cache_directory = "Cache"
         self.local = False
+        self.hosted = True
         self.chunk_size = (2**19)
         self.public_ip = ""
         self.local_ip = ""

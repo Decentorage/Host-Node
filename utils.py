@@ -38,7 +38,7 @@ def is_port_in_use(port):
         used = True
         socket.close()
 
-    if settings.local:
+    if settings.local or settings.hosted:
         return used
     else:
         ret = used or upnp.is_port_open(port)
@@ -48,7 +48,7 @@ def is_port_in_use(port):
 # pick a random port and check that it is not in use
 def open_port(decentorage=False):
     opened = False
-    port = 50000
+    port = int(settings.starting_port)
     while not opened:
         # if decentorage open port 50000 by default, if already in use, find another port
         if decentorage:
@@ -64,7 +64,7 @@ def open_port(decentorage=False):
                 opened = True
 
     # if not running local open port in the router
-    if not settings.local:
+    if not settings.local and not settings.hosted:
         upnp.forward_port(port, port, router=None, lanip=None,
                          disable=False, protocol="TCP", duration=0, description=None, verbose=False)
 
@@ -130,7 +130,7 @@ def check_decentorage_port():
     if used:
         open_port(True)
     else:
-        if not settings.local:
+        if not settings.local and not settings.hosted:
             upnp.forward_port(settings.decentorage_port, settings.decentorage_port, router=None, lanip=None,
                               disable=False, protocol="TCP", duration=0, description=None, verbose=False)
 
